@@ -24,9 +24,8 @@ retries or a selected ref. AWS access uses GitHub OIDC.
 
 Configure these repository variables before enabling deployment:
 
-- `AWS_ROLE_ARN`
-- `STAGING_BUCKET`, `STAGING_DISTRIBUTION`
-- `PRODUCTION_BUCKET`, `PRODUCTION_DISTRIBUTION`
+- `STAGING_ROLE_ARN`, `STAGING_BUCKET`, `STAGING_DISTRIBUTION`
+- `PRODUCTION_ROLE_ARN`, `PRODUCTION_BUCKET`, `PRODUCTION_DISTRIBUTION`
 
 The three site builds share one CloudFront distribution and S3 origin. Each
 site is uploaded under its own prefix (`agentsdlc/`, `orbit/`, `agdr/`) and the
