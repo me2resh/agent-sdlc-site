@@ -1,0 +1,1 @@
+{"name":"@agent-sdlc/design-system","private":true,"type":"module","exports":{"./tokens":"./src/tokens.ts"}}
