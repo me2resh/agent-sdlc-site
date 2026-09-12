@@ -55,7 +55,7 @@ jobs:
       matrix:
         site: [agentsdlc, orbit, agdr]
     env:
-      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      AWS_ROLE_ARN: ${{ vars.STAGING_ROLE_ARN }}
       STAGING_BUCKET: ${{ vars.STAGING_BUCKET }}
       STAGING_DISTRIBUTION: ${{ vars.STAGING_DISTRIBUTION }}
     steps:

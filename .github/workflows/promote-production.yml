@@ -41,6 +41,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    environment:
+      name: production
     permissions:
       contents: read
       id-token: write
@@ -49,7 +51,7 @@ jobs:
       matrix:
         site: [agentsdlc, orbit, agdr]
     env:
-      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      AWS_ROLE_ARN: ${{ vars.PRODUCTION_ROLE_ARN }}
       PRODUCTION_BUCKET: ${{ vars.PRODUCTION_BUCKET }}
       PRODUCTION_DISTRIBUTION: ${{ vars.PRODUCTION_DISTRIBUTION }}
     steps:
