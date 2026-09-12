@@ -18,7 +18,7 @@ Canonical domains are configured through the standards registry. Provisional Ape
 ## Deployment
 
 The deployment workflow builds all three sites once and publishes same-repository
-pull requests to protected staging. A merge to `main` builds and publishes
+pull requests to protected staging. PR builds are created without deployment credentials. A merge to `main` builds and publishes
 production automatically. A manual production dispatch remains available for
 retries or a selected ref. AWS access uses GitHub OIDC.
 
