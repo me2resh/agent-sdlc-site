@@ -1,8 +1,0 @@
-# Agent SDLC
-
-Agent SDLC is a family of open specifications for agentic software engineering.
-
-- Canonical site: https://agentsdlc.ai/
-- ORBIT: https://orbitspec.dev/
-- AgDR: https://agdr.dev/
-- Source: https://github.com/me2resh/agent-sdlc-site
