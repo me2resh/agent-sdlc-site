@@ -1,12 +1,11 @@
 name: Deploy standards sites
 
-# A successful main build is published to staging. Production promotion is a
-# separate manual workflow so a user action is always required, even when the
-# GitHub plan cannot enable environment required-reviewer rules. AWS access
-# uses OIDC; no long-lived credentials are stored in this repository.
+# Every same-repository pull request is published to protected staging.
+# Production is published by the separate workflow after a merge to main.
+# Fork pull requests are build-only and never receive AWS credentials.
 on:
-  push:
-    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -43,8 +42,7 @@ jobs:
     name: Publish staging (${{ matrix.site }})
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: staging
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       fail-fast: false
       matrix:

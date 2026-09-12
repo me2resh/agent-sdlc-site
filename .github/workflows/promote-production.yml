@@ -1,10 +1,10 @@
 name: Promote standards sites to production
 
-# This workflow is intentionally manual. Starting it is the release approval
-# after staging has been checked. The production environment remains attached
-# so a paid GitHub plan can add required reviewers later without changing the
-# deployment implementation.
+# A merge to main publishes the same validated site build to production.
+# workflow_dispatch remains available for an explicit retry or a selected ref.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       ref:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -42,8 +42,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: production
     strategy:
       fail-fast: false
       matrix:
@@ -55,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
       - uses: actions/download-artifact@v4
         with:
           name: standards-site-dist

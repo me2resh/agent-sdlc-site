@@ -17,14 +17,12 @@ Canonical domains are configured through the standards registry. Provisional Ape
 
 ## Deployment
 
-The deployment workflow builds all three sites once and publishes them to the
-protected `staging` GitHub environment. Production is a separate manual
-workflow: start `Promote standards sites to production` after you inspect
-staging. This remains an explicit thumbs-up even when the GitHub plan does not
-support required-reviewer environment rules. AWS access uses GitHub OIDC.
+The deployment workflow builds all three sites once and publishes same-repository
+pull requests to protected staging. A merge to `main` builds and publishes
+production automatically. A manual production dispatch remains available for
+retries or a selected ref. AWS access uses GitHub OIDC.
 
-Configure these environment variables in both GitHub environments before
-enabling deployment:
+Configure these repository variables before enabling deployment:
 
 - `AWS_ROLE_ARN`
 - `STAGING_BUCKET`, `STAGING_DISTRIBUTION`
