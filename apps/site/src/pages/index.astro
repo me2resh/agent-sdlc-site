@@ -1,7 +1,85 @@
 ---
 import Layout from '../layouts/StandardLayout.astro';
-import { currentSite, sites } from '../lib/site';
-const key = currentSite(import.meta.env.PUBLIC_SITE_KEY); const site = sites[key];
-const copy = key === 'orbit' ? { title: 'Keep execution aligned with durable outcomes.', intro: 'ORBIT is a Planning and Reconciliation Specification for expressing durable software intent and deriving one bounded execution slice from current reality.', link: '/specification', label: 'Read the specification' } : key === 'agdr' ? { title: 'Record what an agent decided and why.', intro: 'AgDR preserves consequential technical decisions and their rationale beyond the session that created the code.', link: '/specification', label: 'Read the specification' } : { title: 'Open standards for the artefacts agents leave behind.', intro: 'Portable planning, execution context and decision provenance for agentic software engineering.', link: '/standards', label: 'Explore the standards' };
+import { currentSite } from '../lib/site';
+const key = currentSite(import.meta.env.PUBLIC_SITE_KEY);
+const agdrExample = `---
+id: AgDR-0001
+timestamp: 2026-02-04T12:00:00Z
+agent: claude-code
+model: claude-opus-4-5
+trigger: user-prompt
+status: executed
 ---
-<Layout><section class="page"><p class="eyebrow">{site.kicker}</p><h1>{copy.title}</h1><p class="lede">{copy.intro}</p><div class="actions"><a class="button" href={copy.link}>{copy.label}</a><a class="button quiet" href={site.sourceRepo}>View source</a></div>{key === 'agentsdlc' ? <><div class="card-grid"><article class="card"><h2>ORBIT</h2><p>Planning and reconciliation. Keep execution aligned with durable outcomes.</p><a href="https://orbitspec.dev">Explore ORBIT</a></article><article class="card"><h2>AgDR</h2><p>Agent Decision Records. Record what the agent decided and why.</p><a href="https://agdr.dev">Explore AgDR</a></article></div><div class="callout"><strong>Intent → ORBIT Plan → Reconciliation → Execution Slice → Agent → Code / PR</strong><br />AgDR can preserve the consequential decisions made during that flow.</div></> : <div class="card-grid"><article class="card"><h2>Portable</h2><p>Human-readable and machine-readable artefacts move across agents, repositories and tools.</p></article><article class="card"><h2>Versioned</h2><p>Each specification publishes its version and status clearly.</p></article><article class="card"><h2>Implementation-neutral</h2><p>Tools implement the artefacts. The specifications do not require one provider or workflow.</p></article></div>}</section></Layout>
+
+# Auth Provider for Serverless Chrome Extension
+
+Chosen: AWS Cognito
+
+Why: Native API Gateway integration and managed security.
+
+Trade-off: Hosted UI limitations and AWS lock-in.`;
+const orbitPlan = `PLAN REVISION 4
+
+Outcome
+Users authenticate through corporate SSO.
+
+Acceptance
+○ SSO login succeeds
+○ Existing password sessions remain valid
+○ Logout terminates both sessions`;
+const orbitSnapshot = `PROJECT SNAPSHOT
+
+web-app       main @ 81fee032
+auth-service  main @ 4ed128ac
+
+Current reality, captured before reconciliation.`;
+const orbitReconciliation = `RECONCILIATION
+
+✓ existing OAuth provider found
+! previous auth assumption invalidated
++ one discovery deferred
+→ next bounded change available`;
+const interop = `{\n  \"rel\": \"implements\",\n  \"type\": \"orbit.execution-slice\",\n  \"id\": \"slice-004\"\n}`;
+const orbitSlice = `EXECUTION SLICE
+
+Configure the existing provider
+for the corporate IdP.
+
+Contributes to  AC-1
+Based on       web-app @ 81fee032
+               auth-service @ 4ed128ac`;
+---
+{key === 'agentsdlc' && <Layout><section class="page landing"><p class="pathbar">~/agentsdlc</p><p class="eyebrow">Agent SDLC</p><h1>Open artefacts for<br />agentic software engineering.</h1><p class="lede">Agents move between sessions, tools and repositories. Engineering intent and reasoning should survive them.</p><div class="actions"><a class="button" href="/standards">Explore the standards</a><a class="button quiet" href="/interoperability">Interoperability</a></div><div class="relationship artefact"><p class="section-label">00 / THE FLOW</p><pre class="code">WHAT SHOULD HAPPEN?
+        │
+        ▼
+      ORBIT
+ Planning + reconciliation
+        │
+        ▼
+  Execution Slice
+        │
+        ▼
+       Agent
+        │
+   ┌────┴────┐
+   ▼         ▼
+ Code       AgDR
+        Why this decision?</pre></div><section class="editorial"><p class="section-label">01 / ORBIT</p><h2>Keep execution aligned<br />with durable outcomes.</h2><p class="meta">Planning and Reconciliation Specification</p><p>Define intent and outcomes once. Reconcile them against current software reality. Materialise only the next bounded execution slice.</p><a href="https://orbitspec.dev">orbitspec.dev →</a></section><section class="editorial"><p class="section-label">02 / AgDR</p><h2>Record what the agent<br />decided and why.</h2><p class="meta">Agent Decision Record Specification</p><p>Preserve consequential technical decisions and rationale beyond the agent session that created the code.</p><a href="https://agdr.dev">agdr.dev →</a></section><section class="split"><div><p class="section-label">03 / INTEROPERABILITY</p><h2>Independent by design.<br />Composable when useful.</h2><p>Small artefacts, stable identifiers and typed relationships let standards compose without a shared runtime.</p></div><pre class="code">{interop}</pre></section><section class="split"><div><p class="section-label">04 / WHY PORTABLE ARTEFACTS</p><h2>Sessions are transient.<br />Engineering artefacts should survive.</h2></div><div class="contrast"><p><b>Transient</b><br />conversation<br />agent session<br />runtime prompt</p><p><b>Durable</b><br />plan<br />decision record<br />evidence<br />execution provenance</p></div></section><section class="editorial"><p class="section-label">05 / OPEN DEVELOPMENT</p><h2>Versioned in public.</h2><p>Version-controlled specifications, machine-readable schemas, public proposals and implementation-neutral contracts.</p><a href="/governance">Governance →</a> <a href="/contribute">Contribute →</a></section></section></Layout>}
++{key === 'agdr' && <Layout><section class="page landing"><p class="pathbar">~/agdr</p><p class="eyebrow">AgDR 1.2.0 · OPEN STANDARD</p><h1>Record what the agent decided<br />and why.</h1><p class="lede">Your agent chose a library, a data model or an architecture. The code survived. Did the reasoning?</p><p>AgDR is a small structured Markdown record written when an AI agent makes a consequential technical decision.</p><div class="actions"><a class="button" href="/quick-start">Adopt AgDR</a><a class="button quiet" href="/specification">Read the specification</a></div><section class="editorial"><p class="section-label">01 / THE RECORD</p><h2>A real decision, next to the code.</h2><pre class="code">{agdrExample}</pre><p><a href="https://github.com/me2resh/agent-decision-record/blob/main/examples/AgDR-0001-auth-provider-choice.md">View source ↗</a></p></section><section class="editorial"><p class="section-label">02 / ADOPT</p><h2>Use AgDR with the agent you already have.</h2><div class="rows"><p><b>Claude Code</b><span>Plugin or /decide command</span></p><p><b>Codex</b><span>SKILL.md integration</span></p><p><b>Cursor</b><span>Always-on MDC rule</span></p><p><b>Copilot · Windsurf · Any AI</b><span>Repository instructions or system prompt</span></p><p><b>Git</b><span>Pre-commit and CI enforcement</span></p></div><a href="/integrations">See installation paths →</a></section><section class="split"><div><p class="section-label">03 / THREE-FILE STANDARD</p><h2>Three files. Any agent.</h2><p>Template + schema + validator produce records in <code>docs/agdr/</code>.</p></div><pre class="code">agdr-template.md
+       +
+agdr.schema.json
+       +
+validate-agdr.js
+       ↓
+docs/agdr/AgDR-0001-*.md</pre></section><section class="editorial"><p class="section-label">04 / MACHINE CHECKABLE</p><h2>A standard the agent can fail.</h2><pre class="terminal">$ node scripts/validate-agdr.js docs/agdr/*.md
+✓ AgDR-0001 valid
+✓ AgDR-0002 valid
+
+2 records checked
+0 errors</pre></section><section class="split"><div><p class="section-label">05 / ADR VS AgDR</p><h2>AgDR complements ADR.</h2></div><div class="comparison"><p><b>ADR</b><br />Human architect · design process · usually manual</p><p><b>AgDR</b><br />AI agent · consequential choice · metadata and automated checks</p></div></section><section class="editorial"><p class="section-label">06 / WHEN TO RECORD</p><h2>Record the choices that change the shape of the system.</h2><p>Libraries, architecture, migrations, data models, security and deployment choices deserve a record. Routine formatting and obvious fixes do not.</p><a href="/examples">Browse real decisions →</a></section></section></Layout>}
++{key === 'orbit' && <Layout><section class="page landing"><p class="pathbar">~/orbit</p><p class="eyebrow">ORBIT v0.1 · DRAFT</p><h1>Keep execution aligned<br />with durable outcomes.</h1><p class="lede">Plan intent once. Reconcile against reality. Materialise only the next bounded change.</p><div class="actions"><a class="button" href="/concepts">Read the model</a><a class="button quiet" href="/schemas">View schemas</a></div><div class="lifecycle"><p class="section-label">00 / THE LOOP</p>{['PLAN|Durable intent', 'OBSERVE|Current project state', 'RECONCILE|What changed?', 'SLICE|What is justified next?', 'EXECUTE|'].map((step) => { const [name,desc] = step.split('|'); return <div class="stage"><b>{name}</b><span>{desc}</span></div> })}</div><section class="split artefact-grid"><div><p class="section-label">01 / PLAN</p><pre class="code">{orbitPlan}</pre></div><div><p class="section-label">02 / PROJECT SNAPSHOT</p><pre class="code">{orbitSnapshot}</pre></div><div><p class="section-label">03 / RECONCILIATION</p><pre class="code">{orbitReconciliation}</pre></div><div><p class="section-label">04 / EXECUTION SLICE</p><pre class="code">{orbitSlice}</pre></div></section><section class="editorial"><p class="section-label">05 / THE MODEL</p><h2>A Plan is not a backlog.</h2><p>Durable outcomes. Disposable work. ORBIT decides what change is justified next; execution systems decide how to operationalise it.</p><a href="/specification">Read the draft specification →</a></section><section class="split"><div><p class="section-label">06 / RABBIT-HOLE PROTECTION</p><h2>A discovery does not automatically become work.</h2><p>Classify discoveries as required, supporting, adjacent or unrelated. Only knowledge required for the active outcome may become current work.</p></div><pre class="code">discovery
+   │
+   ▼
+required for active outcome?
+   ├── yes → candidate current work
+   └── no  → record and defer</pre></section></section></Layout>}
