@@ -4,7 +4,7 @@ name: Deploy standards sites
 # Production is published by the separate workflow after a merge to main.
 # Fork pull requests are build-only and never receive AWS credentials.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && format('refs/pull/{0}/merge', github.event.pull_request.number) || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -44,7 +46,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository
     environment:
       name: staging
     strategy:
@@ -56,7 +58,6 @@ jobs:
       STAGING_BUCKET: ${{ vars.STAGING_BUCKET }}
       STAGING_DISTRIBUTION: ${{ vars.STAGING_DISTRIBUTION }}
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: standards-site-dist
