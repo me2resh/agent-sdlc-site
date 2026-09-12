@@ -2,7 +2,23 @@
   "name": "agent-sdlc-site",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/*", "packages/*"],
-  "scripts": {"dev":"npm --workspace apps/site run dev","build":"npm --workspace apps/site run build","check":"npm --workspace apps/site run check"},
-  "dependencies": {"@astrojs/check":"^0.9.4","astro":"^5.13.5","typescript":"^5.9.2"}
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/site run dev",
+    "build": "npm --workspace apps/site run build",
+    "check": "npm --workspace apps/site run check",
+    "build:agentsdlc": "PUBLIC_SITE_KEY=agentsdlc npm --workspace apps/site run build",
+    "build:orbit": "PUBLIC_SITE_KEY=orbit npm --workspace apps/site run build",
+    "build:agdr": "PUBLIC_SITE_KEY=agdr npm --workspace apps/site run build",
+    "validate": "node scripts/validate-site.mjs",
+    "build:all": "npm run build:agentsdlc && npm run build:orbit && npm run build:agdr && npm run validate"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "astro": "^5.13.5",
+    "typescript": "^5.9.2"
+  }
 }
