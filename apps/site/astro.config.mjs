@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import { fileURLToPath } from 'node:url';
 const siteKey = process.env.PUBLIC_SITE_KEY || 'agentsdlc';
+/** @type {Record<string, string>} */
 const sites = {
   agentsdlc: 'https://agentsdlc.ai',
   orbit: 'https://orbitspec.dev',
