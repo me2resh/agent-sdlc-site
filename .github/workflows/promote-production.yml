@@ -1,10 +1,10 @@
 name: Promote standards sites to production
 
-# This workflow is intentionally manual. Starting it is the release approval
-# after staging has been checked. The production environment remains attached
-# so a paid GitHub plan can add required reviewers later without changing the
-# deployment implementation.
+# A merge to main publishes the same validated site build to production.
+# workflow_dispatch remains available for an explicit retry or a selected ref.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       ref:
@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 env:
   AWS_REGION: eu-west-1
@@ -25,7 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -44,18 +44,22 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
         site: [agentsdlc, orbit, agdr]
     env:
-      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      AWS_ROLE_ARN: ${{ vars.PRODUCTION_ROLE_ARN }}
       PRODUCTION_BUCKET: ${{ vars.PRODUCTION_BUCKET }}
       PRODUCTION_DISTRIBUTION: ${{ vars.PRODUCTION_DISTRIBUTION }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
           name: standards-site-dist
