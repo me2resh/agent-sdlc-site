@@ -1,12 +1,108 @@
 ---
 import Layout from '../layouts/StandardLayout.astro';
+const flow = `ORBIT Plan
+    ↓
+Reconciliation
+    ↓
+Execution Slice
+    ↓
+Agent
+ ├──→ Code
+ └──→ AgDR`;
 const example = `{
   "id": "agdr-12",
   "related": [
     { "rel": "implements", "type": "orbit.execution-slice", "id": "slice-004" },
-    { "rel": "satisfies", "type": "orbit.acceptance-criterion", "id": "ac-2" }
+    { "rel": "contributes-to", "type": "orbit.acceptance-criterion", "id": "ac-2" }
   ],
   "extensions": {}
 }`;
+const shape = `{
+  "rel": "implements",
+  "type": "orbit.execution-slice",
+  "id": "slice-004",
+  "href": "https://example.org/orbit/slices/slice-004"
+}`;
+const externalExample = `{ "rel": "deliberation-record", "type": "external.deliberation-record", "id": "record-0042", "href": "https://example.org/deliberation/record-0042" }`;
+const orbitSlice = `{
+  "specVersion": "0.1",
+  "id": "slice-004",
+  "planId": "plan-auth",
+  "outcomeId": "auth",
+  "basedOn": {
+    "planRevision": 3,
+    "reconciliationId": "rec-009",
+    "repositories": { "web-app": { "branch": "main", "commit": "81fee032" } }
+  },
+  "objective": "Configure the existing authentication provider for the corporate identity provider.",
+  "why": "Required to satisfy acceptance criterion ac-2.",
+  "contributesTo": ["ac-2"],
+  "scope": {
+    "include": ["Configure the existing provider for corporate SSO"],
+    "exclude": ["Authentication architecture redesign"]
+  }
+}`;
+const agdrMarkdown = `---
+id: AgDR-0012
+timestamp: 2026-09-12T18:42:00Z
+agent: codex
+model: gpt-5.6
+trigger: user-prompt
+status: executed
+related:
+  - rel: implements
+    type: orbit.execution-slice
+    id: slice-004
+  - rel: contributes-to
+    type: orbit.acceptance-criterion
+    id: ac-2
 ---
-<Layout title="Interoperability"><section class="page"><p class="eyebrow">Interoperability profile · v0.1</p><h1>Small artefacts can compose.</h1><p class="lede">Agent SDLC standards use stable identifiers, typed relationships, optional URIs, version conventions, producer metadata, and namespaced extensions.</p><div class="callout"><strong>Informative profile.</strong> ORBIT and AgDR remain independently conformant. These relationships are optional until adopted normatively.</div><pre class="code">{example}</pre><h2>Relationship shape</h2><p>A relationship has a <code>rel</code>, a registered or URI-like <code>type</code>, and a target <code>id</code>. An optional <code>href</code> gives a portable URI. Targets MAY be unresolved. Relationship order has no meaning and duplicate relationship objects SHOULD be avoided.</p><h2>Initial relationship vocabulary</h2><p>related-to · implements · contributes-to · satisfies · derived-from · supersedes · decision-record · deliberation-record</p></section></Layout>
+
+# Use the existing OAuth provider for corporate SSO
+
+> In the context of an existing web application, facing a corporate SSO requirement, I decided to extend the current OAuth provider to preserve session behavior, accepting provider-specific configuration work.
+
+## Context
+- The application already contains an OAuth provider.
+- The execution slice requires corporate SSO support.
+
+## Options Considered
+| Option | Pros | Cons |
+| --- | --- | --- |
+| Extend the existing provider | Preserves sessions and current integration | Requires provider-specific configuration |
+| Add a second authentication framework | Isolates new configuration | Duplicates session and identity handling |
+
+## Decision
+Extend the existing provider because it satisfies the slice without introducing a second identity path.
+
+## Consequences
+- Existing session behavior remains the default.
+- Provider configuration must be tested for corporate identities.`;
+const relationshipYaml = `rel: implements
+type: orbit.execution-slice
+id: slice-004`;
+const extensions = `{
+  "extensions": {
+    "apexyard": { "jobId": "job-123" },
+    "github": { "pullRequest": 42 }
+  }
+}`;
+---
+<Layout title="Interoperability"><section class="page wide"><p class="pathbar">~/agent-sdlc / interoperability</p><p class="eyebrow">AGENT SDLC INTEROPERABILITY PROFILE · V0.1</p><h1>How they work together.</h1><p class="lede">ORBIT determines what change is justified next. AgDR preserves why a consequential technical decision was made during that work.</p><p>Neither standard depends on the other. This profile defines a small, optional way for portable artefacts to reference one another.</p><div class="status-row"><span class="status neutral">v0.1</span><span class="status informative">Informative</span><span class="status experimental">Experimental interoperability profile</span></div><div class="callout"><strong>Informative profile.</strong> ORBIT and AgDR remain independently conformant. The relationship model described here is optional until adopted normatively by the relevant specifications.</div><aside class="toc"><b>On this page</b><a href="#model">Relationship model</a><a href="#example">Example</a><a href="#semantics">Semantics</a><a href="#identifiers">Identifiers</a><a href="#types">Types</a><a href="#extensions">Extensions</a><a href="#versioning">Versioning</a><a href="#external">External standards</a><a href="#conformance">Conformance</a><a href="#security">Security</a></aside><section id="model" class="split"><div><p class="section-label">HOW THEY WORK TOGETHER</p><h2>Independent standards.<br />Composable artefacts.</h2><p>Stable identifiers and typed relationships allow artefacts to reference one another without requiring a shared runtime, database, API or universal schema.</p><p>ORBIT defines the work context. AgDR can preserve consequential decisions made while carrying out that work.</p></div><pre class="code">{flow}</pre></section><section id="example" class="split"><div><p class="section-label">EXAMPLE</p><h2>An AgDR can point to the work it explains.</h2><p>This record links a decision to an ORBIT execution slice and an acceptance criterion. The relationship is context, not proof.</p><p><b>This record says:</b></p><ul><li>the decision was made while implementing <code>slice-004</code></li><li>the decision contributes context relevant to <code>ac-2</code></li></ul></div><pre class="code">{example}</pre></section><section id="semantics" class="editorial"><p class="section-label">RELATIONSHIP SEMANTICS</p><h2>Source → target</h2><p>Relationship direction is always source → target. The source makes the claim; the target is the artefact being referenced.</p><div class="table-wrap"><table><thead><tr><th>Relationship</th><th>Source → target</th><th>Meaning</th></tr></thead><tbody><tr><td><code>related-to</code></td><td>artefact → artefact</td><td>Generic relationship when no stronger meaning applies.</td></tr><tr><td><code>implements</code></td><td>artefact → execution slice</td><td>Source was created while implementing the target work.</td></tr><tr><td><code>contributes-to</code></td><td>artefact → outcome or criterion</td><td>Source contributes relevant work, reasoning or evidence toward the target.</td></tr><tr><td><code>derived-from</code></td><td>artefact → artefact</td><td>Source was derived from the target.</td></tr><tr><td><code>supersedes</code></td><td>artefact → artefact</td><td>Source replaces the target.</td></tr><tr><td><code>decision-record</code></td><td>artefact → AgDR</td><td>Target records a consequential decision relevant to the source.</td></tr><tr><td><code>deliberation-record</code></td><td>artefact → deliberation record</td><td>Target preserves broader deliberation or adjudication.</td></tr></tbody></table></div><p class="meta">Registered relationships: related-to · implements · contributes-to · derived-from · supersedes · decision-record · deliberation-record</p></section><section id="shape" class="split"><div><p class="section-label">RELATIONSHIP SHAPE</p><h2>Small and explicit.</h2><p><code>rel</code> is required and names the relationship. <code>type</code> is required and identifies the target type. <code>id</code> is required and identifies the target. <code>href</code> is optional and gives a portable resolution location.</p></div><pre class="code">{shape}</pre></section><section id="complete-examples" class="editorial"><p class="section-label">COMPLETE EXAMPLES</p><h2>See the relationship model in full artefacts.</h2><p>These examples use the native representation of each host specification. The IDs connect the artefacts without forcing one file format.</p><div class="example-index"><a href="#orbit-example">ORBIT Execution Slice · JSON</a><a href="#agdr-example">AgDR Decision Record · Markdown</a><a href="#serialization">Relationship · JSON / YAML</a><a href="#end-to-end">End-to-end composition · Diagram</a></div><div id="orbit-example" class="split"><div><p class="section-label">ORBIT EXECUTION SLICE · JSON</p><p class="meta">Informative example. Fields match the current ORBIT draft schema.</p><p class="code-actions">Copy JSON · View raw JSON</p></div><pre class="code">{orbitSlice}</pre></div><div id="agdr-example" class="split"><div><p class="section-label">AgDR DECISION RECORD · MARKDOWN</p><p class="meta">Informative interoperability extension. Core AgDR conformance does not require relationship metadata.</p><p class="code-actions">Copy Markdown · View raw Markdown</p></div><pre class="code">{agdrMarkdown}</pre></div><div id="serialization" class="split"><div><p class="section-label">SAME RELATIONSHIP, DIFFERENT SERIALISATIONS</p><p>The profile defines semantics, not a mandatory serialisation. ORBIT may be JSON-native while AgDR remains Markdown with YAML frontmatter.</p><p class="code-actions">Copy JSON · Copy YAML</p></div><div><pre class="code">{example}</pre><pre class="code">{relationshipYaml}</pre></div></div><div id="end-to-end" class="editorial"><p class="section-label">END-TO-END</p><h2>From plan to decision record.</h2><pre class="code">ORBIT Plan · plan-auth
+      │
+      └── outcome: auth
+             │
+             └── criterion: ac-2
+                       │
+                       ▼
+                Reconciliation · rec-009
+                       │
+                       ▼
+               Execution Slice · slice-004
+                       │
+                       ▼
+                    Agent
+                       │
+                       ├──→ code change
+                       │
+                       └──→ AgDR · AgDR-0012</pre><ol><li>Reconciliation determines that <code>slice-004</code> is justified.</li><li>An agent executes the slice and makes a consequential decision.</li><li>The agent records that decision as <code>AgDR-0012</code>.</li><li>The record references <code>slice-004</code> with <code>implements</code>.</li><li>The record remains useful after the execution session ends.</li></ol><p><b>The relationship means:</b> AgDR-0012 implements slice-004 and contributes context to ac-2.</p></div></section><section id="identifiers" class="editorial"><p class="section-label">IDENTIFIERS</p><h2>Stable identity.</h2><p>Artefact IDs must remain stable for the lifetime of the artefact. IDs should not be reused. Implementations may use UUIDs, ULIDs or human-readable identifiers. The combination of <code>type</code> and <code>id</code> identifies a target within an interoperability context. An <code>href</code> may provide a portable resolution location.</p></section><section id="types" class="editorial"><p class="section-label">ARTEFACT TYPES</p><h2>Registered names.</h2><p>Agent SDLC types use compact names:</p><p class="vocabulary"><code>orbit.plan</code><code>orbit.outcome</code><code>orbit.acceptance-criterion</code><code>orbit.reconciliation</code><code>orbit.execution-slice</code><code>agdr.record</code></p><p>External standards may use registered external names or URI-like type identifiers.</p></section><section id="unresolved" class="editorial"><p class="section-label">UNRESOLVED REFERENCES</p><h2>Portability across systems.</h2><p>A relationship remains valid when its target is not locally available. Consumers may display unresolved references. A consumer must not reject an otherwise valid source artefact solely because a target cannot currently be resolved. An AgDR may reference an ORBIT slice stored in a separate planning system.</p></section><section id="extensions" class="split"><div><p class="section-label">EXTENSIONS</p><h2>Namespaced and optional.</h2><p>Extension namespaces must not change the meaning of core fields. Consumers must ignore namespaces they do not understand and should preserve unknown extensions when rewriting artefacts. Core conformance must not depend on a vendor extension.</p></div><pre class="code">{extensions}</pre></section><section id="versioning" class="editorial"><p class="section-label">VERSIONING</p><h2>Each artefact declares its own version.</h2><p>Relationships may cross specification versions. Consumers should interpret each artefact according to its own declared <code>specVersion</code>. The source and target do not need to use the same version.</p></section><section id="external" class="editorial"><p class="section-label">EXTERNAL STANDARDS</p><h2>Participation stays open.</h2><p>External standards can participate through stable identifiers and typed relationships without becoming part of Agent SDLC. External standards are independently governed and are not part of Agent SDLC.</p><pre class="code">{externalExample}</pre><p>External deliberation standards can use this relationship shape without joining Agent SDLC.</p></section><section id="conformance" class="editorial"><p class="section-label">CONFORMANCE</p><h2>Three lightweight roles.</h2><div class="role-grid"><p><b>Interop Producer</b><br />Emits relationship objects that conform to this profile.</p><p><b>Interop Consumer</b><br />Reads relationships, preserves unknown types where possible and does not require local targets.</p><p><b>Interop Resolver</b><br />Optionally resolves <code>href</code> values. Resolver support is not required for basic compatibility.</p></div></section><section id="security" class="editorial"><p class="section-label">SECURITY</p><h2>Relationships are claims, not proof.</h2><p>A relationship does not imply that a target is valid, trusted or conformant. Treat external <code>href</code> values as untrusted input. Do not execute referenced content solely because an artefact links to it.</p></section><section id="lifecycle" class="editorial"><p class="section-label">LIFECYCLE</p><h2>References preserve history.</h2><p>Relationships are historical references. Archiving or deleting a target does not invalidate the source artefact. Use <code>supersedes</code> to point to a replacement artefact.</p></section></section></Layout>
