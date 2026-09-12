@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/StandardLayout.astro';
+const example = `{
+  "specVersion": "0.1",
+  "id": "plan-authentication",
+  "revision": 1,
+  "project": { "id": "customer-platform" },
+  "title": "Corporate SSO",
+  "intent": "Internal users authenticate through corporate SSO.",
+  "outcomes": [{ "id": "sso", "title": "Corporate users can authenticate using SSO." }],
+  "acceptanceCriteria": [{ "id": "ac-1", "outcomeId": "sso", "statement": "Corporate SSO login succeeds." }]
+}`;
+---
+<Layout title="Quick Start"><section class="page"><p class="eyebrow">ORBIT v0.1 · Draft</p><h1>Start with one outcome.</h1><pre class="code">{example}</pre><h2>Observe, reconcile, execute</h2><p>Observe current project state. Reconcile the plan against that state. Generate one bounded slice. Execute through the provider of your choice. Repeat.</p></section></Layout>

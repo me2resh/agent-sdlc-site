@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/StandardLayout.astro';
+const example = `{
+  "id": "agdr-12",
+  "related": [
+    { "rel": "implements", "type": "orbit.execution-slice", "id": "slice-004" },
+    { "rel": "satisfies", "type": "orbit.acceptance-criterion", "id": "ac-2" }
+  ],
+  "extensions": {}
+}`;
+---
+<Layout title="Interoperability"><section class="page"><p class="eyebrow">Interoperability profile · v0.1</p><h1>Small artefacts can compose.</h1><p class="lede">Agent SDLC standards use stable identifiers, typed relationships, optional URIs, version conventions, producer metadata, and namespaced extensions.</p><div class="callout"><strong>Informative profile.</strong> ORBIT and AgDR remain independently conformant. These relationships are optional until adopted normatively.</div><pre class="code">{example}</pre><h2>Initial relationship vocabulary</h2><p>related-to · implements · contributes-to · satisfies · derived-from · supersedes · decision-record · deliberation-record</p></section></Layout>
