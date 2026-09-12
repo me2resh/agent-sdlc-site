@@ -5,8 +5,7 @@ const root = new URL('..', import.meta.url).pathname;
 const required = [
   'apps/site/src/layouts/StandardLayout.astro',
   'apps/site/src/pages/index.astro',
-  'apps/site/public/robots.txt',
-  'apps/site/public/llms.txt',
+  'apps/site/src/pages/robots.txt.ts',
   'config/standards.ts'
 ];
 for (const file of required) {
