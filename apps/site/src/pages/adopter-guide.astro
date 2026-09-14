@@ -1,0 +1,71 @@
+---
+import Layout from '../layouts/StandardLayout.astro';
+import { currentSite } from '../lib/site';
+const key = currentSite(import.meta.env.PUBLIC_SITE_KEY);
+const plan = `{
+  "specVersion": "0.1",
+  "id": "plan-sso",
+  "revision": 1,
+  "project": { "id": "customer-platform" },
+  "title": "Corporate SSO",
+  "intent": "Internal users authenticate through corporate SSO.",
+  "outcomes": [{ "id": "sso", "title": "Corporate users authenticate with SSO." }],
+  "acceptanceCriteria": [{ "id": "ac-1", "outcomeId": "sso", "statement": "SSO login succeeds." }]
+}`;
+const snapshot = `{
+  "specVersion": "0.1",
+  "id": "snapshot-2026-09-14",
+  "project": { "id": "customer-platform" },
+  "observedAt": "2026-09-14T16:00:00Z",
+  "repositories": [{ "repositoryId": "web", "branch": "main", "commit": "81fee032" }]
+}`;
+const reconciliation = `{
+  "specVersion": "0.1",
+  "id": "reconciliation-001",
+  "planId": "plan-sso",
+  "planRevision": 1,
+  "projectSnapshotId": "snapshot-2026-09-14",
+  "reconciledAt": "2026-09-14T16:05:00Z",
+  "observations": [{ "id": "obs-1", "text": "An existing OAuth provider is configured." }],
+  "criterionAssessments": [{
+    "criterionId": "ac-1",
+    "status": "partially-verified",
+    "evidence": [{ "kind": "repository", "ref": "web@81fee032" }],
+    "explanation": "The provider exists, but corporate IdP mapping is missing."
+  }]
+}`;
+const slice = `{
+  "specVersion": "0.1",
+  "id": "slice-001",
+  "planId": "plan-sso",
+  "outcomeId": "sso",
+  "basedOn": { "planRevision": 1, "reconciliationId": "reconciliation-001", "repositories": { "web": "81fee032" } },
+  "objective": "Configure the existing provider for the corporate IdP.",
+  "why": "The reconciliation found the provider but not the IdP mapping.",
+  "contributesTo": ["ac-1"],
+  "scope": { "include": ["IdP mapping", "login regression test"], "exclude": ["provider replacement", "account migration"] }
+}`;
+---
+{key === 'orbit' ? <Layout title="Adopter guide"><section class="page wide"><p class="pathbar">~/orbit/adopter-guide</p><p class="eyebrow">ORBIT v0.1 · INFORMATIVE GUIDE</p><h1>Use ORBIT without building a platform.</h1><p class="lede">Keep intent durable, compare it with current project facts, and hand an executor one bounded change at a time.</p><div class="actions"><a class="button" href="/quick-start">Start with the quick start</a><a class="button quiet" href="/schemas">Open the schemas</a></div><div class="guide-note"><strong>Scope.</strong> This guide is informative. It gives adopters a practical starting shape. The published specification and schemas remain the source of truth, and this guide does not require a particular agent, tracker, repository layout, or dashboard.</div>
+
+<section class="editorial" id="loop"><p class="section-label">THE PRACTICAL LOOP</p><h2>Move one evidence-backed change forward.</h2><p>Keep the plan stable while the snapshot and reconciliation change. Create a new execution slice only when the evidence justifies work.</p><div class="orbit-flow" aria-label="ORBIT workflow"><div class="orbit-step"><b>1 · Plan</b><p>State intent, outcomes, criteria, and constraints.</p></div><span class="flow-arrow" aria-hidden="true">→</span><div class="orbit-step"><b>2 · Observe</b><p>Capture repositories, branches, commits, and relevant facts.</p></div><span class="flow-arrow" aria-hidden="true">→</span><div class="orbit-step"><b>3 · Reconcile</b><p>Assess criteria with evidence. Record what changed and what is unknown.</p></div><span class="flow-arrow" aria-hidden="true">→</span><div class="orbit-step"><b>4 · Slice</b><p>Define the smallest justified change, with explicit exclusions.</p></div><span class="flow-arrow" aria-hidden="true">→</span><div class="orbit-step"><b>5 · Execute</b><p>Hand the approved slice to the executor you already use.</p></div></div></section>
+
+<section class="split" id="minimal-set"><div><p class="section-label">MINIMUM ARTEFACT SET</p><h2>Four records are enough to start.</h2><p>You can keep these as JSON files, database records, or another portable representation. ORBIT does not prescribe storage.</p><ol class="checklist"><li><b>Plan</b> — durable intent and outcomes.</li><li><b>Project Snapshot</b> — observed repository state.</li><li><b>Reconciliation</b> — criterion assessments and evidence.</li><li><b>Execution Slice</b> — the next bounded change and its provenance.</li></ol></div><pre class="code">.orbit/
+  plan.json
+  snapshots/
+    snapshot-001.json
+  reconciliations/
+    reconciliation-001.json
+  slices/
+    slice-001.json</pre></section>
+
+<section class="editorial" id="cockpit"><p class="section-label">COCKPIT HANDOFF · INFORMATIVE</p><h2>Where a product dashboard fits.</h2><p>A Cockpit can render the records without owning the standard. It can refresh the snapshot, show the reconciliation, ask for approval, and dispatch the slice through its existing governed execution path.</p><div class="orbit-handoff" aria-label="Cockpit handoff"><div class="handoff-node"><b>ORBIT records</b><span>Plan, snapshot, reconciliation, slice</span></div><span class="flow-arrow" aria-hidden="true">→</span><div class="handoff-node"><b>Review surface</b><span>Evidence, stale state, scope, approval</span></div><span class="flow-arrow" aria-hidden="true">→</span><div class="handoff-node"><b>Executor</b><span>Issue, branch, agent, CI, and merge mechanics</span></div></div><p class="meta">Provider-specific mechanics belong to the executor. The portable slice carries the intent and provenance needed for a safe handoff.</p></section>
+
+<section class="split" id="examples"><div><p class="section-label">PLAN</p><p>Keep this record stable while implementation details change.</p><pre class="code">{plan}</pre></div><div><p class="section-label">PROJECT SNAPSHOT</p><p>Capture the state used for the next assessment.</p><pre class="code">{snapshot}</pre></div><div><p class="section-label">RECONCILIATION</p><p>Explain the assessment. Do not silently rewrite the plan.</p><pre class="code">{reconciliation}</pre></div><div><p class="section-label">EXECUTION SLICE</p><p>Make scope and exclusions visible before dispatch.</p><pre class="code">{slice}</pre></div></section>
+
+<section class="editorial" id="lifecycle"><p class="section-label">LIFECYCLE RULES</p><h2>Know when work must stop.</h2><div class="table-wrap"><table class="small-table"><thead><tr><th>State</th><th>Meaning</th><th>Next action</th></tr></thead><tbody><tr><td>Plan revised</td><td>Durable intent or criteria changed.</td><td>Capture a new snapshot and reconcile again.</td></tr><tr><td>Snapshot captured</td><td>Repository facts are available for assessment.</td><td>Produce a reconciliation.</td></tr><tr><td>Slice proposed</td><td>Evidence supports one bounded change.</td><td>Review scope, exclusions, and provenance.</td></tr><tr><td>Slice approved</td><td>An operator accepted the proposed change.</td><td>Dispatch to the executor.</td></tr><tr><td>Stale</td><td>A relevant repository commit or plan revision differs from the slice provenance.</td><td>Block dispatch. Capture a new snapshot and slice.</td></tr><tr><td>Executed</td><td>The executor produced code, evidence, or a recorded outcome.</td><td>Reconcile the outcome against the criteria.</td></tr></tbody></table></div></section>
+
+<section class="split" id="adopter-checklist"><div><p class="section-label">ADOPTER CHECKLIST</p><h2>Start small.</h2><ol class="checklist"><li>Choose one outcome that matters.</li><li>Create one plan with stable criterion IDs.</li><li>Capture one repository snapshot.</li><li>Write one reconciliation with evidence.</li><li>Generate one slice with include and exclude lists.</li><li>Require human approval before execution.</li><li>Record the result and reconcile again.</li></ol></div><div><p class="section-label">DO NOT OVERBUILD</p><h2>Keep discoveries useful.</h2><p>A discovery does not automatically become work. Classify it as required, supporting, adjacent, or unrelated to the active outcome. Only required knowledge should create the next slice.</p><p><a href="/concepts">Review the ORBIT concepts</a> · <a href="/specification">Read the draft specification</a></p></div></section>
+
+<section class="editorial"><p class="section-label">IMPLEMENTATION ROLES</p><h2>Conformance can be incremental.</h2><div class="role-grid"><p><b>Producer</b><br />Writes a valid plan or slice.</p><p><b>Observer</b><br />Captures a project snapshot.</p><p><b>Reconciler</b><br />Assesses criteria and records evidence.</p></div><div class="role-grid"><p><b>Executor</b><br />Consumes an approved slice.</p><p><b>Consumer</b><br />Reads records without owning their storage.</p><p><b>Resolver</b><br />Optionally follows external references.</p></div></section>
+</section></Layout> : <Layout title="Adopter guide"><section class="page"><p class="eyebrow">Not an ORBIT page</p><h1>Choose the ORBIT site.</h1><p class="lede">This guide is available at <a href="https://orbitspec.dev/adopter-guide">orbitspec.dev/adopter-guide</a>.</p></section></Layout>}
