@@ -11,12 +11,25 @@ const plan = JSON.stringify(planRecord, null, 2);
 const snapshot = JSON.stringify(snapshotRecord, null, 2);
 const reconciliation = JSON.stringify(reconciliationRecord, null, 2);
 const slice = JSON.stringify(sliceRecord, null, 2);
+const provenance = `{
+  "planId": "plan-sso",
+  "planRevision": 1,
+  "reconciliationId": "reconciliation-001",
+  "sliceId": "slice-001"
+}`;
+const executionReference = `{
+  "sliceId": "slice-001",
+  "provider": "github",
+  "kind": "issue",
+  "id": "142",
+  "href": "https://example.org/issues/142"
+}`;
 ---
 {key === 'orbit' ? <Layout title="Implementation guide"><section class="page wide"><p class="pathbar">~/orbit/implementation</p><p class="eyebrow">ORBIT v0.1 · INFORMATIVE GUIDE</p><h1>Adopt ORBIT without building a platform.</h1><p class="lede">Keep intent durable, compare it with current project facts, and hand an executor one bounded change at a time.</p><div class="actions"><a class="button" href="/quick-start">Start with the quick start →</a><a class="text-link" href="/schemas">View schemas</a></div><div class="guide-note"><strong>Scope</strong><p>This guide is informative. It gives implementers a practical starting point. The published specification and schemas remain authoritative.</p><p>ORBIT does not require a particular agent, tracker, repository layout, storage system, dashboard, or executor.</p></div>
 
 <section class="editorial" id="loop"><p class="section-label">THE PRACTICAL LOOP</p><h2>Move one evidence-backed change forward.</h2><p>Keep the Plan stable while observations and reconciliations change. Materialise a new Execution Slice only when current evidence justifies work.</p><div class="orbit-flow" aria-label="ORBIT reconciliation loop"><div class="orbit-step"><b>01 · PLAN</b><p>State durable intent, Outcomes, acceptance criteria, and constraints.</p></div><span class="flow-arrow" aria-hidden="true">→</span><div class="orbit-step"><b>02 · OBSERVE</b><p>Capture the project and repository facts relevant to the Plan.</p></div><span class="flow-arrow" aria-hidden="true">→</span><div class="orbit-step"><b>03 · RECONCILE</b><p>Assess criteria with evidence. Record changes, gaps, and unknowns.</p></div><span class="flow-arrow" aria-hidden="true">→</span><div class="orbit-step"><b>04 · SLICE</b><p>Define the smallest justified change, with explicit inclusions and exclusions.</p></div><span class="flow-arrow" aria-hidden="true">→</span><div class="orbit-step"><b>05 · EXECUTE</b><p>Apply local policy and hand an execution-ready slice to the executor.</p></div></div><div class="loop-return"><span aria-hidden="true">↩</span><b>OBSERVE AGAIN</b><span>Capture the resulting project state before the next reconciliation.</span></div></section>
 
-<section class="split" id="minimal-set"><div><p class="section-label">MINIMUM ARTEFACT SET</p><h2>Four core record types implement the loop.</h2><ol class="checklist"><li><b>Plan</b> <code>Plan</code><br />Durable intent, Outcomes, and acceptance criteria.</li><li><b>Project Snapshot</b> <code>ProjectSnapshot</code><br />Observed project and repository state.</li><li><b>Reconciliation</b> <code>Reconciliation</code><br />Assessment of the Plan against observed evidence.</li><li><b>Execution Slice</b> <code>ExecutionSlice</code><br />The next bounded change justified by that reconciliation.</li></ol></div><div class="guide-note"><strong>Portable records</strong><p>ORBIT defines the records and their normative fields. It does not define where they are stored or which tool produces them.</p></div></section>
+<section class="split" id="minimal-set"><div><p class="section-label">MINIMUM ARTEFACT SET</p><h2>Four core record types implement the loop.</h2><ol class="checklist"><li><b>Plan</b><code>Plan</code><br />Durable intent, Outcomes, and acceptance criteria.</li><li><b>Project Snapshot</b><code>ProjectSnapshot</code><br />Observed project and repository state.</li><li><b>Reconciliation</b><code>Reconciliation</code><br />Assessment of the Plan against observed evidence.</li><li><b>Execution Slice</b><code>ExecutionSlice</code><br />The next bounded change justified by that reconciliation.</li></ol></div><div class="guide-note"><strong>Portable records</strong><p>ORBIT defines the records and their normative fields. It does not define where they are stored or which tool produces them.</p></div></section>
 
 <section class="editorial" id="storage"><p class="section-label">STORAGE · INFORMATIVE</p><h2>Keep the representation portable.</h2><p>Use repository files, database records, objects in another system, or another representation that preserves the normative fields.</p><div class="split"><div><p class="section-label">EXAMPLE REPOSITORY LAYOUT</p><p>This layout is illustrative. An <code>.orbit/</code> directory is not required.</p></div><pre class="code">.orbit/
   plan.json
@@ -40,7 +53,139 @@ const slice = JSON.stringify(sliceRecord, null, 2);
 
 <section class="editorial" id="handoff"><p class="section-label">EXECUTION HANDOFF · INFORMATIVE</p><h2>Connect ORBIT to the executor you already use.</h2><p>ORBIT stops at the execution boundary. An execution host can render ORBIT records without becoming the source of truth. It can refresh project state, present a reconciliation for review, apply local policy, and dispatch an Execution Slice through an existing execution path.</p><div class="handoff-stack" aria-label="Execution handoff"><div class="handoff-node"><b>ORBIT records</b><span>Plan · ProjectSnapshot · Reconciliation · ExecutionSlice</span></div><div class="handoff-arrow" aria-hidden="true">↓</div><div class="handoff-node"><b>Local policy / review</b><span>Review surface · tracker · orchestration layer</span></div><div class="handoff-arrow" aria-hidden="true">↓</div><div class="handoff-node"><b>Executor</b><span>Issue · branch · agent · CI · merge mechanics</span></div></div><p class="meta">Provider-specific mechanics belong outside the portable ExecutionSlice contract. The slice carries the objective, scope, constraints, and provenance needed for a safe handoff.</p></section>
 
+<section class="editorial" id="materialisation"><p class="section-label">MATERIALISATION · INFORMATIVE</p><h2>Turn a justified slice into executable work.</h2><p>Materialisation is the act of turning an execution-ready Execution Slice into provider-specific executable work. It is an implementation concern, not a new durable planning layer.</p><pre class="code boundary-code">DURABLE PLANNING                         PROVIDER-SPECIFIC EXECUTION
+
+Plan
+  ↓
+ProjectSnapshot
+  ↓
+Reconciliation
+  ↓
+ExecutionSlice
+  │
+  │ execution-ready
+  ▼
+─────────────────── EXECUTION BOUNDARY ─────────────────────
+  │
+  ▼
+Local policy
+  │
+  ▼
+Materialise
+  ├── GitHub issue
+  ├── Jira ticket
+  ├── ApexYard job
+  ├── Agent run
+  ├── CI workflow
+  └── Direct developer handoff</pre><p class="meta">ORBIT ends at the portable Execution Slice. The execution host decides how that slice becomes executable work.</p></section>
+
+<section class="split" id="ticket-boundary"><div><p class="section-label">WHEN DOES WORK BECOME A TICKET?</p><h2>Only after current evidence justifies a slice.</h2><p>Not during planning. Not when an Outcome is created. Not when a possible future task is discovered.</p><p>A ticket may be created only after reconciliation has produced an execution-ready Execution Slice and the selected execution host chooses a ticket-based representation.</p></div><div class="equation-list"><p><b>Plan</b><span>≠ backlog</span></p><p><b>Outcome</b><span>≠ epic</span></p><p><b>Execution Slice</b><span>≠ ticket</span></p><p><b>Ticket</b><span>= optional projection of an Execution Slice</span></p></div></section>
+
+<section class="split" id="ticket-projection"><div><p class="section-label">TICKET MATERIALISATION · INFORMATIVE</p><h2>One provider projection.</h2><p class="meta">ORBIT Execution Slice · <code>slice-001</code></p><p><b>Objective</b><br />Configure the existing provider for the corporate IdP.</p><p><b>Include</b><br />IdP mapping<br />Login regression test</p><p><b>Exclude</b><br />Provider replacement<br />Account migration</p><p><b>Based on</b><br /><code>plan-sso</code> rev 1 · <code>reconciliation-001</code> · <code>web @ 81fee032</code></p></div><div><p class="section-label">↓ GITHUB ADAPTER MATERIALISES</p><div class="artefact"><p><b># Configure corporate IdP mapping</b></p><p><b>Objective</b><br />Configure the existing authentication provider for the corporate IdP.</p><p><b>Scope</b><br />Add IdP mapping<br />Add login regression test</p><p><b>Out of scope</b><br />Provider replacement<br />Account migration</p><p><b>ORBIT provenance</b><br />Plan: <code>plan-sso @ revision 1</code><br />Reconciliation: <code>reconciliation-001</code><br />Slice: <code>slice-001</code><br />Repository: <code>web @ 81fee032</code></p></div><p class="meta">The issue is an execution projection. The Execution Slice remains the portable source of execution intent.</p></div></section>
+
+<section class="editorial" id="execution-strategies"><p class="section-label">OPTIONAL TICKET PROJECTION</p><h2>The same slice can be executed differently.</h2><pre class="code boundary-code">                   ExecutionSlice
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+         ▼               ▼               ▼
+    GitHub issue      Agent run      CI workflow
+         │               │               │
+         ▼               ▼               ▼
+      execute          execute          execute</pre><p>ORBIT does not require work to become a ticket. Ticket creation is one possible execution strategy.</p></section>
+
+<section class="split" id="provenance"><div><p class="section-label">MATERIALISATION PROVENANCE</p><h2>Keep the origin traceable.</h2><p>Provider-specific work created from a slice should preserve enough provenance to identify its ORBIT origin.</p><pre class="code">{provenance}</pre><p class="meta">Where relevant, also preserve the ProjectSnapshot ID, repository IDs and revisions, and attachment hashes.</p></div><div><p class="section-label">EXECUTION REFERENCE · INFORMATIVE</p><p>An ExecutionReference is a useful host-side record linking a slice to materialised work. It is not required to be part of the portable ORBIT core.</p><pre class="code">{executionReference}</pre></div></section>
+
+<section class="split" id="idempotency"><div><p class="section-label">MATERIALISATION SHOULD BE IDEMPOTENT</p><h2>Reuse an existing execution reference.</h2><p>An execution host should not create duplicate work for the same Execution Slice. If <code>slice-001</code> has already been materialised, return or reuse the existing execution reference.</p></div><pre class="code boundary-code">slice-001
+    ↓
+lookup execution reference
+    │
+    ├── exists → reuse
+    │
+    └── absent → materialise</pre></section>
+
 <section class="split" id="examples"><div><p class="section-label">PLAN · <code>Plan</code></p><p>Keep durable intent stable while implementation details change.</p><pre class="code">{plan}</pre></div><div><p class="section-label">PROJECT SNAPSHOT · <code>ProjectSnapshot</code></p><p>Capture the state used for the next assessment.</p><pre class="code">{snapshot}</pre></div><div><p class="section-label">RECONCILIATION · <code>Reconciliation</code></p><p>Explain the assessment and preserve structured evidence.</p><pre class="code">{reconciliation}</pre></div><div><p class="section-label">EXECUTION SLICE · <code>ExecutionSlice</code></p><p>Make scope, exclusions, and provenance visible before dispatch.</p><pre class="code">{slice}</pre></div></section>
+
+<section class="editorial" id="closed-loop"><p class="section-label">CLOSED LOOP · INFORMATIVE</p><h2>Execution changes the next observation.</h2><pre class="code boundary-code">                       durable
+                         Plan
+                          │
+                          ▼
+                   ProjectSnapshot
+                          │
+                          ▼
+                   Reconciliation
+                          │
+                          ▼
+                   ExecutionSlice
+                          │
+                   execution boundary
+                          │
+                          ▼
+                    Materialise
+                   /     |      \
+                  /      |       \
+              ticket   agent     CI
+                  \      |       /
+                   \     |      /
+                        execute
+                          │
+                          ▼
+                   project changes
+                          │
+                          └─────────────┐
+                                        │
+                                        ▼
+                                 observe again</pre></section>
+
+<section class="split" id="durable-derived"><div><p class="section-label">DURABLE VS DERIVED</p><h2>Durable intent survives execution cycles.</h2><pre class="code boundary-code">DURABLE
+
+Plan
+├── Intent
+├── Outcomes
+├── Acceptance criteria
+└── Constraints
+
+            ↓ reconciliation
+
+CURRENT / DERIVED
+
+ProjectSnapshot
+Reconciliation
+ExecutionSlice
+Ticket / Job / Agent run</pre></div><div class="guide-note"><strong>Derived work may be replaced.</strong><p>Project reality changes. A new reconciliation may justify a different slice or no slice at all. Provider work items do not become the durable planning source of truth.</p></div></section>
+
+<section class="editorial" id="changes"><p class="section-label">WHAT CHANGES WHEN?</p><h2>Keep each record's trigger clear.</h2><div class="table-wrap"><table class="small-table"><thead><tr><th>Artefact</th><th>Changes when</th></tr></thead><tbody><tr><td><code>Plan</code></td><td>Intent or planning knowledge changes.</td></tr><tr><td><code>ProjectSnapshot</code></td><td>Relevant project reality changes.</td></tr><tr><td><code>Reconciliation</code></td><td>The Plan is reassessed against a snapshot.</td></tr><tr><td><code>ExecutionSlice</code></td><td>New work is justified by the reconciliation.</td></tr><tr><td>Ticket / job</td><td>A host materialises a slice.</td></tr></tbody></table></div></section>
+
+<section class="split" id="materialisation-timing"><div><p class="section-label">DO NOT PRE-MATERIALISE</p><h2>Materialise only the work justified now.</h2><pre class="code boundary-code">Plan
+  ↓
+reconcile
+  ↓
+slice-001
+  ↓
+execute
+  ↓
+observe
+  ↓
+reconcile
+  ↓
+slice-002</pre></div><div><p class="section-label">SPECULATIVE FUTURE WORK</p><p>ORBIT may identify likely future work, but it should not automatically materialise that work as executable tasks.</p><p>Likely future work may be recorded as discovery, captured as planning context, represented as unresolved Outcome work, or deferred.</p><p class="meta">It should not be automatically turned into tickets.</p></div></section>
+
+<section class="split" id="outcome-projection"><div><p class="section-label">OUTCOME PROJECTION · INFORMATIVE</p><h2>An Outcome is not a ticket container.</h2><p>An Outcome is a durable desired result. It is not an epic, milestone, ticket group, or issue hierarchy. An implementation may project an Outcome to a provider parent issue, but that projection must not change the meaning of the Outcome.</p></div><pre class="code boundary-code">ORBIT
+
+Plan
+└── Outcome: Corporate SSO
+      │
+      ├── Reconciliation
+      │
+      └── ExecutionSlice slice-001
+
+                    ↓ provider projection
+
+GitHub
+
+Parent issue: Corporate SSO
+└── Issue #142: Configure corporate IdP mapping
+
+The hierarchy is a projection. ORBIT does not depend on it.</pre></section>
 
 <section class="split" id="safety"><div><p class="section-label">TYPICAL LOOP TRANSITIONS · INFORMATIVE</p><h2>Apply safety rules at the boundary.</h2><p>These are implementation events and recommended actions. They are not a normative executor state machine.</p></div><div class="table-wrap"><table class="small-table"><thead><tr><th>Event or condition</th><th>Meaning</th><th>Recommended action</th></tr></thead><tbody><tr><td>Plan revision changed</td><td>Durable intent or criteria changed.</td><td>Capture a new snapshot and reconcile again.</td></tr><tr><td>Relevant project state changed</td><td>The facts used by a reconciliation may no longer describe the project.</td><td>Capture a new snapshot before producing a slice.</td></tr><tr><td>Slice eligible for execution</td><td>Current evidence supports the bounded scope.</td><td>Apply local policy and dispatch.</td></tr><tr><td>Execution completed</td><td>The executor produced code, evidence, or a recorded result.</td><td>Observe the resulting state and reconcile again.</td></tr></tbody></table></div></section>
 
@@ -53,6 +198,8 @@ const slice = JSON.stringify(sliceRecord, null, 2);
 <section class="editorial" id="roles"><p class="section-label">IMPLEMENTATION ROLES · INFORMATIVE</p><h2>Adopt capabilities incrementally.</h2><p>These labels describe implementation responsibilities. They are informative unless the specification defines them as formal conformance classes.</p><div class="role-grid"><p><b>Producer</b><br />Emits one or more valid ORBIT records.</p><p><b>Observer</b><br />Produces factual ProjectSnapshot records from project state.</p><p><b>Reconciler</b><br />Compares a Plan with observed state and produces a Reconciliation.</p></div><div class="role-grid"><p><b>Executor</b><br />Accepts an execution-ready ExecutionSlice and attempts the bounded change.</p><p><b>Consumer</b><br />Reads ORBIT records without owning their storage or production.</p><p><b>Resolver</b><br />Optionally resolves external references used by ORBIT records.</p></div></section>
 
 <section class="split" id="boundaries"><div><p class="section-label">EXECUTOR NEUTRAL</p><h2>ORBIT does not define how code is changed.</h2><p>An Execution Slice may be consumed by a coding agent, developer, CI workflow, issue tracker integration, orchestration system, or another execution mechanism. Executor-specific details must not become required fields in the portable Plan.</p><p class="meta">Execution Slices are derived work, not the durable planning source of truth. ORBIT does not require a complete future task list.</p></div><div><p class="section-label">ORBIT DOES NOT DEFINE</p><ul class="checklist"><li>Issue trackers</li><li>Branch or pull-request workflows</li><li>Agent runtimes or task queues</li><li>Dashboards or repository storage layout</li><li>Approval systems or CI providers</li></ul><p>ORBIT defines portable planning and reconciliation artefacts. Implementations decide how those artefacts are stored, reviewed, and executed.</p></div></section>
+
+<section class="editorial" id="mental-model"><p class="section-label">FINAL MENTAL MODEL</p><h2>Keep the boundary clear.</h2><div class="rows"><p><b>Plan</b><span>tells us what outcome remains durable.</span></p><p><b>ProjectSnapshot</b><span>tells us what is true now.</span></p><p><b>Reconciliation</b><span>tells us what the evidence means.</span></p><p><b>ExecutionSlice</b><span>tells us what bounded change is justified now.</span></p><p><b>Materialisation</b><span>turns that slice into provider-specific executable work.</span></p><p><b>Ticket</b><span>is one possible materialisation.</span></p></div><div class="guide-note"><strong>Tickets are projections of justified work, not the planning source of truth.</strong></div></section>
 
 <section class="editorial" id="next"><p class="section-label">NEXT</p><h2>Start with one loop.</h2><p>Create one Plan. Observe the current project state. Reconcile once. Produce one bounded Execution Slice. Execute it. Observe again.</p><div class="actions"><a class="button" href="/quick-start">Quick Start →</a><a class="text-link" href="/schemas">View the schemas</a><a class="text-link" href="/specification">Read the specification</a></div></section>
 </section></Layout> : <Layout title="Implementation guide"><section class="page"><p class="eyebrow">Not an ORBIT page</p><h1>Choose the ORBIT site.</h1><p class="lede">This guide is available at <a href="https://orbitspec.dev/adopter-guide">orbitspec.dev/adopter-guide</a>.</p></section></Layout>}
