@@ -1,0 +1,14 @@
+---
+import OrbitResourcePage from '../../components/OrbitResourcePage.astro';
+import { currentSite } from '../../lib/site';
+import { resources, resourceByKey } from '../../data/orbit/resources';
+
+export function getStaticPaths() {
+  if (currentSite(import.meta.env.PUBLIC_SITE_KEY) !== 'orbit') return [];
+  return resources.map(resource => ({ params: { resource: resource.key }, props: { resource } }));
+}
+
+const resource = Astro.props.resource ?? resourceByKey(Astro.params.resource ?? '');
+if (!resource) throw new Error(`Unknown ORBIT resource: ${Astro.params.resource}`);
+---
+<OrbitResourcePage resource={resource} />

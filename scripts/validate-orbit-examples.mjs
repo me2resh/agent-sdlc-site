@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
@@ -6,12 +6,15 @@ const readJson = file => JSON.parse(readFileSync(join(root, file), 'utf8'));
 const schemaRoot = 'apps/site/src/data/orbit';
 const exampleRoot = `${schemaRoot}/examples`;
 
-const entries = [
-  ['Plan', 'plan.schema.json', 'plan-sso.json'],
-  ['ProjectSnapshot', 'project-snapshot.schema.json', 'project-snapshot-2026-09-14.json'],
-  ['Reconciliation', 'reconciliation.schema.json', 'reconciliation-001.json'],
-  ['ExecutionSlice', 'execution-slice.schema.json', 'slice-001.json']
-];
+const schemaForExample = file => file.startsWith('plan-') ? ['Plan', 'plan.schema.json']
+  : file.startsWith('project-snapshot-') ? ['ProjectSnapshot', 'project-snapshot.schema.json']
+    : file.startsWith('reconciliation-') ? ['Reconciliation', 'reconciliation.schema.json']
+      : file.startsWith('slice-') ? ['ExecutionSlice', 'execution-slice.schema.json'] : undefined;
+const entries = readdirSync(join(root, exampleRoot)).filter(file => file.endsWith('.json')).map(exampleFile => {
+  const match = schemaForExample(exampleFile);
+  if (!match) throw new Error(`ORBIT example validation failed: no schema mapping for ${exampleFile}`);
+  return [...match, exampleFile];
+});
 
 const fail = message => { throw new Error(`ORBIT example validation failed: ${message}`); };
 
@@ -48,12 +51,18 @@ function validate(value, schema, path = '$') {
   if (schema.type === 'number' && typeof value !== 'number') fail(`${path} must be a number`);
 }
 
-const records = Object.fromEntries(entries.map(([name, schemaFile, exampleFile]) => {
+for (const [name, schemaFile, exampleFile] of entries) {
   const schema = readJson(`${schemaRoot}/${schemaFile}`);
   const value = readJson(`${exampleRoot}/${exampleFile}`);
   validate(value, schema, name);
-  return [name, value];
-}));
+}
+
+const records = Object.fromEntries([
+  ['Plan', 'plan-sso.json'],
+  ['ProjectSnapshot', 'project-snapshot-2026-09-14.json'],
+  ['Reconciliation', 'reconciliation-001.json'],
+  ['ExecutionSlice', 'slice-001.json']
+].map(([name, exampleFile]) => [name, readJson(`${exampleRoot}/${exampleFile}`)]));
 
 const { Plan: plan, ProjectSnapshot: snapshot, Reconciliation: reconciliation, ExecutionSlice: slice } = records;
 const repository = snapshot.repositories.find(item => item.repositoryId === 'web');
