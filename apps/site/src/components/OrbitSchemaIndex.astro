@@ -1,0 +1,72 @@
+---
+import Layout from '../layouts/StandardLayout.astro';
+import { resources } from '../data/orbit/resources';
+---
+<Layout title="Resources & schemas"><section class="page wide"><p class="pathbar">~/orbit/schemas</p><p class="eyebrow">ORBIT RESOURCES &amp; SCHEMAS · v0.1 DRAFT</p><h1>Machine-readable contracts.</h1><p class="lede">Four core portable record types define the ORBIT planning and reconciliation model.</p><div class="actions"><a class="button" href="#resource-index">Browse resources</a><a class="text-link" href="/examples/plan/customer-sso">View the complete example →</a></div>
+
+<section class="editorial" id="resource-model"><p class="section-label">RESOURCE MODEL</p><h2>Records relate by reference.</h2><pre class="code boundary-code resource-graph">                        ┌──────────────┐
+                        │     Plan     │
+                        │ durable      │
+                        │ intent       │
+                        └──────┬───────┘
+                               │
+                     planId + revision
+                               │
+                               ▼
+┌───────────────────┐   ┌──────────────────┐
+│ ProjectSnapshot   │   │  Reconciliation  │
+│ observed state    │   │ assessment       │
+└─────────┬─────────┘   └────────┬─────────┘
+          │                       │
+          │ projectSnapshotId     │ justifies
+          └───────────────▶───────┘
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │ ExecutionSlice   │
+                         │ bounded work     │
+                         └──────────────────┘</pre><div class="split resource-relationship-grid"><div><p class="section-label">REFERENCE SEMANTICS</p><p><strong>Reconciliation</strong> references a Plan and Plan revision, a ProjectSnapshot, and canonical Acceptance Criteria.</p><p><strong>ExecutionSlice</strong> references a Plan and Plan revision, the Reconciliation that justified it, an Outcome, contributing Acceptance Criteria, and relevant repository provenance.</p></div><pre class="code boundary-code">Project
+  └── 1..N Plans
+        └── 1..N Outcomes
+
+Plan
+  └── 1..N Acceptance Criteria</pre></div></section>
+
+<section class="editorial" id="resource-index"><p class="section-label">RESOURCE INDEX</p><h2>Four portable resources.</h2><div class="resource-grid">{resources.map(resource => <article class="resource-card"><p class="type-label">{resource.canonicalName}</p><h3>{resource.displayName}</h3><p>{resource.description}</p><p class="resource-meta"><b>References</b><br />{resource.references}</p><div class="resource-actions"><a href={`/schemas/${resource.key}`}>Resource guide →</a><a href={resource.schemaPath}>Raw schema ↗</a><a href={`/examples/${resource.key}/${resource.examples[1].slug}`}>Examples →</a></div></article>)}</div></section>
+
+<section class="editorial" id="reference-table"><p class="section-label">RESOURCE REFERENCES</p><div class="table-wrap"><table class="small-table"><thead><tr><th>Resource</th><th>Purpose</th><th>References</th></tr></thead><tbody>{resources.map(resource => <tr><td><code>{resource.canonicalName}</code></td><td>{resource.description}</td><td>{resource.references}</td></tr>)}</tbody></table></div></section>
+
+<section class="editorial" id="complete-example"><p class="section-label">COMPLETE EXAMPLE</p><h2>Follow one outcome through the ORBIT model.</h2><pre class="code boundary-code">Plan
+plan-sso @ revision 1
+         │
+         ▼
+ProjectSnapshot
+snapshot-2026-09-14
+         │
+         ▼
+Reconciliation
+reconciliation-001
+         │
+         ▼
+ExecutionSlice
+slice-001</pre><p>Each node is a complete, schema-valid resource. Open the <a href="/examples/plan/customer-sso">Plan</a>, <a href="/examples/project-snapshot/customer-platform">ProjectSnapshot</a>, <a href="/examples/reconciliation/partial-verification">Reconciliation</a>, or <a href="/examples/execution-slice/customer-sso">ExecutionSlice</a> example.</p><pre class="code boundary-code">plan-sso
+├── outcome: sso
+└── criterion: ac-1
+
+snapshot-2026-09-14
+└── web @ 81fee032
+
+reconciliation-001
+├── plan: plan-sso rev 1
+├── snapshot: snapshot-2026-09-14
+└── assesses: ac-1
+
+slice-001
+├── plan: plan-sso rev 1
+├── outcome: sso
+├── reconciliation: reconciliation-001
+├── contributesTo: ac-1
+└── web @ 81fee032</pre></section>
+
+<section class="editorial" id="how-to-read"><p class="section-label">HOW TO READ ORBIT RESOURCES</p><div class="guide-note"><p><strong>Guide</strong> explains semantics and relationships.</p><p><strong>JSON Schema</strong> defines machine-valid structure.</p><p><strong>Invariants</strong> define cross-field and lifecycle rules that schema validation alone cannot express.</p><p><strong>Examples</strong> demonstrate conforming usage.</p></div><p class="meta">JSON Schema validates structural conformance. ORBIT conformance may also depend on semantic invariants defined by the specification.</p></section>
+</section></Layout>

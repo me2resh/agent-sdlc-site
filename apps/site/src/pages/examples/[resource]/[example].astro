@@ -1,0 +1,15 @@
+---
+import OrbitExamplePage from '../../../components/OrbitExamplePage.astro';
+import { currentSite } from '../../../lib/site';
+import { resources } from '../../../data/orbit/resources';
+
+export function getStaticPaths() {
+  if (currentSite(import.meta.env.PUBLIC_SITE_KEY) !== 'orbit') return [];
+  return resources.flatMap(resource => resource.examples.map(example => ({ params: { resource: resource.key, example: example.slug }, props: { resource, example } })));
+}
+
+const resource = Astro.props.resource;
+const example = Astro.props.example;
+if (!resource || !example) throw new Error(`Unknown ORBIT example: ${Astro.params.resource}/${Astro.params.example}`);
+---
+<OrbitExamplePage resource={resource} example={example} />
