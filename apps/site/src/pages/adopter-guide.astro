@@ -59,6 +59,17 @@ const slice = `{
   slices/
     slice-001.json</pre></section>
 
+<section class="editorial" id="multiple-plans"><p class="section-label">MULTIPLE PLANS</p><h2>One project can carry many plans.</h2><p>The plan schema describes one plan record at a time. It does not impose a one-plan limit on a project. Give each outcome or initiative its own plan ID and revision. Reconciliations and execution slices point to the plan they assess or advance.</p><div class="split"><div><p class="section-label">SHARED PROJECT FACTS</p><p>A snapshot can describe the current state for several plans. Capture a new snapshot when the relevant repository facts change.</p></div><pre class="code">.orbit/
+  plans/
+    sso/plan.json
+    billing/plan.json
+  snapshots/
+    snapshot-001.json
+  reconciliations/
+    sso/reconciliation-001.json
+  slices/
+    sso/slice-001.json</pre></div><div class="guide-note"><strong>Keep identity explicit.</strong> Use distinct plan IDs, keep revisions within each plan, and never use a reconciliation or slice without its referenced <code>planId</code>.</div></section>
+
 <section class="editorial" id="cockpit"><p class="section-label">COCKPIT HANDOFF · INFORMATIVE</p><h2>Where a product dashboard fits.</h2><p>A Cockpit can render the records without owning the standard. It can refresh the snapshot, show the reconciliation, ask for approval, and dispatch the slice through its existing governed execution path.</p><div class="orbit-handoff" aria-label="Cockpit handoff"><div class="handoff-node"><b>ORBIT records</b><span>Plan, snapshot, reconciliation, slice</span></div><span class="flow-arrow" aria-hidden="true">→</span><div class="handoff-node"><b>Review surface</b><span>Evidence, stale state, scope, approval</span></div><span class="flow-arrow" aria-hidden="true">→</span><div class="handoff-node"><b>Executor</b><span>Issue, branch, agent, CI, and merge mechanics</span></div></div><p class="meta">Provider-specific mechanics belong to the executor. The portable slice carries the intent and provenance needed for a safe handoff.</p></section>
 
 <section class="split" id="examples"><div><p class="section-label">PLAN</p><p>Keep this record stable while implementation details change.</p><pre class="code">{plan}</pre></div><div><p class="section-label">PROJECT SNAPSHOT</p><p>Capture the state used for the next assessment.</p><pre class="code">{snapshot}</pre></div><div><p class="section-label">RECONCILIATION</p><p>Explain the assessment. Do not silently rewrite the plan.</p><pre class="code">{reconciliation}</pre></div><div><p class="section-label">EXECUTION SLICE</p><p>Make scope and exclusions visible before dispatch.</p><pre class="code">{slice}</pre></div></section>
