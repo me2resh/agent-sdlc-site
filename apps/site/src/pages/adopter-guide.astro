@@ -31,25 +31,34 @@ const executionReference = `{
 
 <section class="split" id="minimal-set"><div><p class="section-label">MINIMUM ARTEFACT SET</p><h2>Four core record types implement the loop.</h2><ol class="checklist"><li><b>Plan</b><code>Plan</code><br />Durable intent, Outcomes, and acceptance criteria.</li><li><b>Project Snapshot</b><code>ProjectSnapshot</code><br />Observed project and repository state.</li><li><b>Reconciliation</b><code>Reconciliation</code><br />Assessment of the Plan against observed evidence.</li><li><b>Execution Slice</b><code>ExecutionSlice</code><br />The next bounded change justified by that reconciliation.</li></ol></div><div class="guide-note"><strong>Portable records</strong><p>ORBIT defines the records and their normative fields. It does not define where they are stored or which tool produces them.</p></div></section>
 
-<section class="editorial" id="storage"><p class="section-label">STORAGE · INFORMATIVE</p><h2>Keep the representation portable.</h2><p>Use repository files, database records, objects in another system, or another representation that preserves the normative fields.</p><div class="split"><div><p class="section-label">EXAMPLE REPOSITORY LAYOUT</p><p>This layout is illustrative. An <code>.orbit/</code> directory is not required.</p></div><pre class="code">.orbit/
-  plan.json
-  snapshots/
-    snapshot-001.json
-  reconciliations/
-    reconciliation-001.json
-  slices/
-    slice-001.json</pre></div><p class="meta">Storage is an implementation choice. Keep record identity, references, and provenance intact when records move between systems.</p></section>
-
-<section class="editorial" id="multiple-plans"><p class="section-label">MULTIPLE PLANS</p><h2>One project can contain multiple independent Plans.</h2><p>A Plan may contain one or more Outcomes. Create a separate Plan when the intent, lifecycle, ownership, or planning context is meaningfully independent. Each Plan has its own stable ID and revision history. Reconciliations and Execution Slices reference the Plan they assess or advance.</p><div class="split"><div><p class="section-label">SHARED PROJECT FACTS</p><p>ProjectSnapshot records are independent of Plan intent. A snapshot may be reused across reconciliations when it contains the repository state and observations relevant to each Plan being assessed.</p><p>Capture a new snapshot when relevant project facts change or when a reconciliation needs observations that the existing snapshot does not contain.</p></div><pre class="code">.orbit/
+<section class="editorial" id="storage"><p class="section-label">STORAGE · INFORMATIVE</p><h2>Keep the representation portable.</h2><p>Use repository files, database records, objects in another system, or another representation that preserves the normative fields.</p><div class="split"><div><p class="section-label">EXAMPLE REPOSITORY LAYOUT</p><p>This layout is illustrative. An <code>.orbit/</code> directory is not required.</p><pre class="code">.orbit/
   plans/
-    customer-sso/plan.json
-    billing/plan.json
+    customer-sso/
+      plan.json
+    billing/
+      plan.json
   snapshots/
     snapshot-001.json
   reconciliations/
-    customer-sso/reconciliation-001.json
+    customer-sso/
+      reconciliation-001.json
   slices/
-    customer-sso/slice-001.json</pre></div><div class="guide-note"><strong>Keep identity explicit.</strong><p>Use stable Plan IDs. Keep revision history within each Plan. Every Reconciliation and Execution Slice must identify the Plan revision on which it depends. Where relevant, preserve the ProjectSnapshot ID, Reconciliation ID, and repository revisions.</p></div></section>
+    customer-sso/
+      slice-001.json</pre></div><div><p>ORBIT does not prescribe this directory layout or require files on disk. Storage is implementation-defined.</p><p>A project may contain only one Plan. The same structure still works with a single entry under <code>plans/</code>.</p></div></div><p class="meta">Keep record identity, references, and provenance intact when records move between systems.</p></section>
+
+<section class="editorial" id="plans-within-project"><p class="section-label">PLANS WITHIN A PROJECT</p><h2>A project can contain one or more Plans.</h2><p>A Plan contains one or more Outcomes.</p><pre class="code boundary-code">Project
+  └── 1..N Plans
+        └── 1..N Outcomes</pre><p>Use a single Plan when one durable intent and lifecycle are sufficient. Create additional Plans only when the intent, lifecycle, ownership, or planning context is meaningfully independent.</p><p>Each Plan has its own stable ID and revision history. Reconciliations and Execution Slices reference the Plan they assess or advance.</p><div class="guide-note"><strong>Conceptual model</strong><p>Project → Plans → Outcomes</p><p>Storage model: implementation-defined.</p></div></section>
+
+<section class="editorial" id="shared-project-facts"><p class="section-label">SHARED PROJECT FACTS</p><h2>Reuse observations only when they remain relevant.</h2><div class="split"><pre class="code boundary-code">               ProjectSnapshot
+                     │
+          ┌──────────┴──────────┐
+          │                     │
+          ▼                     ▼
+     Plan: SSO              Plan: Billing
+          │                     │
+          ▼                     ▼
+  Reconciliation          Reconciliation</pre><div><p>A ProjectSnapshot may support multiple reconciliations when it contains the observations relevant to each Plan.</p><p>Capture a new ProjectSnapshot when relevant project facts change or when a reconciliation needs observations the existing snapshot does not contain.</p></div></div><div class="guide-note"><strong>Keep identity explicit.</strong><p>Use stable Plan IDs. Keep revision history within each Plan. Every Reconciliation and Execution Slice must identify the Plan revision on which it depends. Where relevant, preserve the ProjectSnapshot ID, Reconciliation ID, and repository revisions.</p></div></section>
 
 <section class="editorial" id="handoff"><p class="section-label">EXECUTION HANDOFF · INFORMATIVE</p><h2>Connect ORBIT to the executor you already use.</h2><p>ORBIT stops at the execution boundary. An execution host can render ORBIT records without becoming the source of truth. It can refresh project state, present a reconciliation for review, apply local policy, and dispatch an Execution Slice through an existing execution path.</p><div class="handoff-stack" aria-label="Execution handoff"><div class="handoff-node"><b>ORBIT records</b><span>Plan · ProjectSnapshot · Reconciliation · ExecutionSlice</span></div><div class="handoff-arrow" aria-hidden="true">↓</div><div class="handoff-node"><b>Local policy / review</b><span>Review surface · tracker · orchestration layer</span></div><div class="handoff-arrow" aria-hidden="true">↓</div><div class="handoff-node"><b>Executor</b><span>Issue · branch · agent · CI · merge mechanics</span></div></div><p class="meta">Provider-specific mechanics belong outside the portable ExecutionSlice contract. The slice carries the objective, scope, constraints, and provenance needed for a safe handoff.</p></section>
 
