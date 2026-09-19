@@ -21,7 +21,7 @@ export const pages: Record<string, Page> = {
 export function getStaticPaths(){
   const routesBySite: Record<string, string[]> = {
     agentsdlc: ['governance', 'contribute', 'implementations'],
-    orbit: ['schemas', 'reconciliation', 'execution-slices', 'examples', 'conformance', 'changelog'],
+    orbit: ['schemas', 'reconciliation', 'execution-slices', 'examples', 'conformance', 'changelog', 'contribute'],
     agdr: ['schema', 'examples', 'integrations', 'conformance', 'related-standards', 'changelog']
   };
   return (routesBySite[currentSite(import.meta.env.PUBLIC_SITE_KEY)] ?? []).map(slug => ({ params: { slug }, props: { page: pages[slug] } }));
