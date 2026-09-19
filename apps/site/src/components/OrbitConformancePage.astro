@@ -1,0 +1,19 @@
+---
+import Layout from '../layouts/StandardLayout.astro';
+---
+<Layout title="Conformance"><section class="page wide"><p class="pathbar">~/orbit/conformance</p><p class="eyebrow">ORBIT v0.1 · CONFORMANCE</p><h1>Show what your implementation produces and consumes.</h1><p class="lede">ORBIT conformance is capability-based. An implementation can produce, observe, reconcile, or execute without adopting a particular agent, tracker, repository, or CI system.</p>
+
+<section class="editorial" id="roles"><p class="section-label">CAPABILITY MATRIX</p><h2>Four implementation roles.</h2><div class="table-wrap"><table class="small-table conformance-table"><thead><tr><th>Role</th><th>Produces</th><th>Consumes</th><th>Minimum evidence</th></tr></thead><tbody><tr><td><b>Producer</b></td><td>One or more valid ORBIT records.</td><td>Plan context or source inputs.</td><td>Schema-valid fixture and stable identity.</td></tr><tr><td><b>Observer</b></td><td>ProjectSnapshot.</td><td>Repository and project facts.</td><td>Traceable observations and capture time.</td></tr><tr><td><b>Reconciler</b></td><td>Reconciliation.</td><td>Plan and ProjectSnapshot.</td><td>Criterion assessments linked to evidence.</td></tr><tr><td><b>Executor</b></td><td>Execution result outside ORBIT.</td><td>ExecutionSlice.</td><td>Scope, exclusions, and provenance are preserved.</td></tr></tbody></table></div></section>
+
+<section class="split" id="validation"><div><p class="section-label">VALIDATION LAYERS</p><h2>Use three checks.</h2><ol class="checklist"><li><b>Structure.</b> Validate JSON against the published resource schema.</li><li><b>Semantics.</b> Check invariants that JSON Schema cannot express.</li><li><b>Interoperability.</b> Run cross-record fixtures and verify references resolve.</li></ol></div><div class="guide-note"><strong>Draft status</strong><p>ORBIT v0.1 schemas and invariants may change before 1.0. Report the version tested by an implementation.</p></div></section>
+
+<section class="editorial" id="tooling"><p class="section-label">TOOLING PATH</p><h2>Keep validators small and replaceable.</h2><div class="card-grid"><article class="card"><h2>Schema validator</h2><p>Use any JSON Schema implementation. The published schemas define machine-valid structure.</p><a href="/schemas">Browse schemas →</a></article><article class="card"><h2>Invariant checker</h2><p>Run semantic rules for IDs, revisions, references, provenance, and lifecycle meaning.</p><a href="/specification">Read the specification →</a></article><article class="card"><h2>Fixture suite</h2><p>Test minimal and complete records together so references and version claims remain visible.</p><a href="/examples">Open examples →</a></article></div></section>
+
+<section class="split" id="claim"><div><p class="section-label">CONFORMANCE CLAIM</p><h2>Make support easy to assess.</h2><p>Publish the ORBIT version, roles supported, resources produced or consumed, validator version, and known limitations.</p></div><pre class="code boundary-code">implementation: example-orbit-adapter
+orbitVersion: 0.1
+roles: [observer, reconciler]
+resources: [ProjectSnapshot, Reconciliation]
+validation: schema + invariants + fixtures</pre></section>
+
+<section class="editorial" id="next"><p class="section-label">NEXT</p><h2>Start with the evidence you can show.</h2><p>Choose one role, validate one complete fixture, and document the boundary between ORBIT records and provider-specific execution.</p><div class="actions"><a class="button" href="/adopter-guide">Open adopter guide →</a><a class="text-link" href="/examples">View test fixtures →</a></div></section>
+</section></Layout>
