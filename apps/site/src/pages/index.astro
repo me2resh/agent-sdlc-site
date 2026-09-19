@@ -18,36 +18,7 @@ Chosen: AWS Cognito
 Why: Native API Gateway integration and managed security.
 
 Trade-off: Hosted UI limitations and AWS lock-in.`;
-const orbitPlan = `PLAN REVISION 4
-
-Outcome
-Users authenticate through corporate SSO.
-
-Acceptance
-○ SSO login succeeds
-○ Existing password sessions remain valid
-○ Logout terminates both sessions`;
-const orbitSnapshot = `PROJECT SNAPSHOT
-
-web-app       main @ 81fee032
-auth-service  main @ 4ed128ac
-
-Current reality, captured before reconciliation.`;
-const orbitReconciliation = `RECONCILIATION
-
-✓ existing OAuth provider found
-! previous auth assumption invalidated
-+ one discovery deferred
-→ next bounded change available`;
 const interop = `{\n  \"rel\": \"implements\",\n  \"type\": \"orbit.execution-slice\",\n  \"id\": \"slice-004\"\n}`;
-const orbitSlice = `EXECUTION SLICE
-
-Configure the existing provider
-for the corporate IdP.
-
-Contributes to  AC-1
-Based on       web-app @ 81fee032
-               auth-service @ 4ed128ac`;
 ---
 {key === 'agentsdlc' && <Layout><section class="page landing"><p class="pathbar">~/agentsdlc</p><p class="eyebrow">Agent SDLC</p><h1>Open artefacts for<br />agentic software engineering.</h1><p class="lede">Agents move between sessions, tools and repositories. Engineering intent and reasoning should survive them.</p><div class="actions"><a class="button quiet" href="#standards">See how Agent SDLC works ↓</a></div><div id="standards" class="standards-heading"><p class="section-label">STANDARDS</p></div><div class="standards-grid"><section class="standard editorial"><p class="section-label">STANDARD</p><p class="standard-name">ORBIT</p><h2>Keep execution aligned<br />with durable outcomes.</h2><p class="meta">Planning and Reconciliation Specification</p><p>Define intent and outcomes once. Reconcile them against current software reality. Materialise only the next bounded execution slice.</p><a href="https://orbitspec.dev">Explore ORBIT →</a><p class="meta">orbitspec.dev</p></section><section class="standard editorial"><p class="section-label">STANDARD</p><p class="standard-name">AgDR</p><h2>Record what the agent<br />decided and why.</h2><p class="meta">Agent Decision Record Specification</p><p>Preserve consequential technical decisions and rationale beyond the agent session that created the code.</p><a href="https://agdr.dev">Explore AgDR →</a><p class="meta">agdr.dev</p></section></div><section class="editorial"><p class="section-label">HOW THEY WORK TOGETHER</p><h2>Independent by design.<br />Composable when useful.</h2><p class="meta">INTEROPERABILITY</p><p>ORBIT determines what work is justified next. AgDR preserves why a consequential technical decision was made during that work.</p><p>Neither standard depends on the other.</p><pre class="code">ORBIT Plan
     ↓
@@ -70,9 +41,4 @@ docs/agdr/AgDR-*.md</pre></section><section class="editorial"><p class="section-
 
 2 records checked
 0 errors</pre><p><a href="https://github.com/me2resh/agent-decision-record/blob/main/scripts/validate-agdr.js">View validator source ↗</a></p></section><section class="split"><div><p class="section-label">WHEN TO RECORD</p><h2>Record choices that change the system.</h2><p><b>Create an AgDR</b><br />Choose a library, architecture, storage model, migration strategy, security approach or lasting project convention.</p></div><div><p><b>Do not create an AgDR</b><br />Variable names, formatting, routine refactoring, existing conventions and straightforward fixes.</p></div></section><section class="split"><div><p class="section-label">ADR VS AGDR</p><h2>AgDR complements ADR.</h2></div><div class="comparison"><p><b>ADR</b><br />Human or team · design process · usually manual</p><p><b>AgDR</b><br />AI agent · during execution · metadata and automated checks</p></div></section><section class="editorial"><p class="section-label">REAL EXAMPLES</p><h2>Decisions from the repository.</h2><p>Authentication, data models, migration strategies, mobile architecture, release workflows and image loading.</p><a href="/examples">Browse examples →</a></section><section class="editorial"><p class="section-label">INTEROPERABILITY</p><h2>Independent by design.</h2><p>AgDR remains useful on its own. With ORBIT, a record can optionally reference the execution slice or outcome context where the decision was made.</p><a href="https://agentsdlc.ai/interoperability">Read the profile →</a></section></section></Layout>}
-{key === 'orbit' && <Layout><section class="page landing"><p class="pathbar">~/orbit</p><p class="eyebrow">ORBIT v0.1 · DRAFT</p><h1>Keep execution aligned<br />with durable outcomes.</h1><p class="lede">Plan intent once. Reconcile against reality. Materialise only the next bounded change.</p><div class="actions"><a class="button" href="/adopter-guide">Adopt ORBIT</a><a class="button quiet" href="/schemas">View schemas</a></div><div class="lifecycle"><p class="section-label">00 / THE LOOP</p>{['PLAN|Durable intent', 'OBSERVE|Current project state', 'RECONCILE|What changed?', 'SLICE|What is justified next?', 'EXECUTE|'].map((step) => { const [name,desc] = step.split('|'); return <div class="stage"><b>{name}</b><span>{desc}</span></div> })}</div><section class="split artefact-grid"><div><p class="section-label">01 / PLAN</p><pre class="code">{orbitPlan}</pre></div><div><p class="section-label">02 / PROJECT SNAPSHOT</p><pre class="code">{orbitSnapshot}</pre></div><div><p class="section-label">03 / RECONCILIATION</p><pre class="code">{orbitReconciliation}</pre></div><div><p class="section-label">04 / EXECUTION SLICE</p><pre class="code">{orbitSlice}</pre></div></section><section class="editorial"><p class="section-label">05 / THE MODEL</p><h2>A Plan is not a backlog.</h2><p>Durable outcomes. Disposable work. ORBIT decides what change is justified next; execution systems decide how to operationalise it.</p><a href="/specification">Read the draft specification →</a></section><section class="split"><div><p class="section-label">06 / RABBIT-HOLE PROTECTION</p><h2>A discovery does not automatically become work.</h2><p>Classify discoveries as required, supporting, adjacent or unrelated. Only knowledge required for the active outcome may become current work.</p></div><pre class="code">discovery
-   │
-   ▼
-required for active outcome?
-   ├── yes → candidate current work
-   └── no  → record and defer</pre></section></section></Layout>}
+{key === 'orbit' && <Layout><section class="page orbit-home"><div class="orbit-kicker"><span>ORBIT</span><span>·</span><span>v0.1 Draft</span></div><h1>Planning and reconciliation for agentic software.</h1><p class="lede">ORBIT keeps durable outcomes separate from disposable execution work. It gives teams a shared language for intent, evidence, and the next justified change.</p><div class="button-row"><a class="button" href="/quick-start">Start with the quick start</a><a class="button quiet" href="/specification">Read the specification</a></div><div class="orbit-home-grid"><a class="orbit-home-card" href="/concepts"><span>Learn</span><h2>Understand the model</h2><p>See how Plans, snapshots, reconciliations, and slices relate.</p><strong>Read Concepts →</strong></a><a class="orbit-home-card" href="/schemas"><span>Reference</span><h2>Use the contracts</h2><p>Browse the four portable resources and their machine-readable schemas.</p><strong>Browse Schemas →</strong></a><a class="orbit-home-card" href="/adopter-guide"><span>Adopt</span><h2>Connect your workflow</h2><p>Introduce ORBIT without replacing your agent, tracker, repository, or CI.</p><strong>Open Implementation guide →</strong></a><a class="orbit-home-card" href="/reconciliation"><span>Reference</span><h2>Reconcile reality</h2><p>Compare current project facts with durable intent and record evidence.</p><strong>Read Reconciliation →</strong></a><a class="orbit-home-card" href="/execution-slices"><span>Reference</span><h2>Materialise one slice</h2><p>Turn justified work into a bounded, execution-ready change.</p><strong>Read Execution slices →</strong></a><a class="orbit-home-card" href="/conformance"><span>Adopt</span><h2>Check conformance</h2><p>Keep producers, observers, reconcilers, and executors interoperable.</p><strong>View Conformance →</strong></a></div><section class="editorial"><p class="section-label">THE LOOP</p><h2>Observe before you execute.</h2><p>ORBIT turns planning into a repeatable evidence loop. Durable intent stays stable while project reality changes.</p><div class="orbit-home-loop"><div><b>01 · PLAN</b><span>Durable intent</span></div><div><b>02 · OBSERVE</b><span>Current project state</span></div><div><b>03 · RECONCILE</b><span>Evidence and gaps</span></div><div><b>04 · SLICE</b><span>Next justified change</span></div><div><b>05 · EXECUTE</b><span>Provider-specific work</span></div></div></section><div class="orbit-home-note"><p><strong>A Plan is not a backlog.</strong><br />ORBIT defines portable planning and reconciliation artefacts. Your execution host decides how a justified slice becomes an issue, branch, agent run, or CI workflow.</p><a href="/conformance">See the boundaries →</a></div></section></Layout>}
