@@ -1,5 +1,6 @@
 ---
 import { currentSite, sites } from '../lib/site';
+import '@agent-sdlc/design-system/tokens.css';
 const key = currentSite(import.meta.env.PUBLIC_SITE_KEY);
 const site = sites[key];
 const version = key === 'agdr' ? 'AgDR 1.2.0 · Published' : key === 'orbit' ? 'ORBIT v0.1 · Draft' : 'Agent SDLC · Early ecosystem';
@@ -41,4 +42,54 @@ html[data-theme="light"] .orbit-site .brand{color:#17202a}html[data-theme="light
 .guide-links{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;background:#f6f9fc;border:1px solid #d8e0e8;padding:1rem}.guide-links a{display:block;padding:.8rem;text-decoration:none;border:1px solid #d8e0e8;background:#fff;color:#17202a}.guide-links a:hover{border-color:#185abc}.guide-links strong,.guide-links span{display:block}.guide-links span{font-size:.82rem;color:#64748b;margin-top:.3rem}@media(max-width:720px){.guide-links{grid-template-columns:1fr 1fr}}@media(max-width:480px){.guide-links{grid-template-columns:1fr}}
 html[data-theme="light"] .guide-note{background:#f6f9fc;color:#17202a;border-color:#185abc}html[data-theme="dark"] .guide-note{background:#16212c;color:#f2f5f7;border-color:#2f7cf6}
 html[data-theme="light"] .code,html[data-theme="light"] .terminal,html[data-theme="light"] .orbit-step,html[data-theme="light"] .stale-node{background:#f8fafc;color:#243447;border-color:#d8e0e8}html[data-theme="light"] .orbit-step p,html[data-theme="light"] .stale-node span{color:#475569}html[data-theme="light"] .orbit-step b,html[data-theme="light"] .stale-node b{color:#185abc}html[data-theme="dark"] .code,html[data-theme="dark"] .terminal,html[data-theme="dark"] .orbit-step,html[data-theme="dark"] .stale-node{background:#16212c;color:#f2f5f7;border-color:#2a3948}
+</style>
+<script is:inline>
+  Array.from(document.querySelectorAll('a[href^="http://"], a[href^="https://"]')).forEach((link) => {
+    const anchor = /** @type {HTMLAnchorElement} */ (link);
+    const url = new URL(anchor.href, window.location.href);
+    if (url.origin !== window.location.origin) {
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+    }
+  });
+</script>
+<style is:global>
+  /* Keep the shared standards sites visually aligned with apexyard.ai. */
+  html, body { background: var(--paper); color: var(--ink); }
+  body { font-family: var(--mono); }
+  h1, h2, h3, .brand { font-family: var(--display); }
+  h1, h2, h3 { font-weight: 700; }
+  a { color: var(--accent); }
+  header, footer { border-color: var(--rule-faint); }
+  .brand, .standard-name { color: var(--ink); }
+  .version, .pathbar, .section-label, .meta, .lede, footer, .stage span,
+  .rows span, .orbit-home-card p, .orbit-home-note p { color: var(--ink-faint); }
+  .eyebrow, .section-label, .pathbar, .stage b, .orbit-home-card span,
+  .orbit-home-card strong, .orbit-home-loop b, .status, .code-actions { color: var(--accent); }
+  .status, .toc, .table-wrap th, .table-wrap td, .editorial, .split,
+  .trust-strip, .rows p, .stage, .orbit-home-note { border-color: var(--rule-faint); }
+  .button { background: var(--accent); color: var(--paper); border-radius: var(--radius-sm); }
+  .button.quiet { color: var(--accent); border-color: var(--accent); }
+  .artefact, .lifecycle, .vocabulary code, .example-index a, .card, .callout,
+  .resource-card, .orbit-home-card, .adoption-records a, .guide-note {
+    background: var(--paper-2); border-color: var(--rule-faint); color: var(--ink);
+  }
+  .code, .terminal { background: var(--paper-2); color: var(--ink); border: 1px solid var(--rule); border-color: var(--rule); }
+  .code, .terminal, .orbit-step, .stale-node { border-radius: var(--radius-sm); }
+  .role-grid p, .contrast-row > *, .contrast p, .comparison p { border-color: var(--accent); }
+  .theme-toggle { border-color: var(--rule-faint); color: var(--ink); }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .actions { gap: 1rem; align-items: center; }
+  .interop-diagram { display: flex; flex-direction: column; align-items: stretch; gap: .6rem; padding: 1.25rem; background: var(--paper-2); border: 1px solid var(--rule-faint); border-radius: var(--radius-sm); }
+  .interop-node { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; padding: .8rem 1rem; background: var(--paper); border: 1px solid var(--rule-faint); border-left: 3px solid var(--accent); }
+  .interop-node span { color: var(--accent); font: .68rem var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+  .interop-node strong { font-family: var(--display); font-size: 1.1rem; }
+  .interop-arrow { color: var(--accent); font: 1.25rem var(--mono); text-align: center; animation: interop-pulse 1.8s ease-in-out infinite; }
+  .interop-node:nth-of-type(3) { animation: interop-highlight 1.8s ease-in-out infinite; }
+  .interop-outputs { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: .6rem; align-items: center; margin-top: .2rem; padding-left: 1rem; }
+  .interop-outputs .interop-arrow { text-align: left; }
+  @keyframes interop-pulse { 0%, 100% { opacity: .35; transform: translateY(-2px); } 50% { opacity: 1; transform: translateY(2px); } }
+  @keyframes interop-highlight { 0%, 100% { border-color: var(--rule-faint); } 50% { border-color: var(--accent); } }
+  @media (prefers-reduced-motion: reduce) { .interop-arrow, .interop-node:nth-of-type(3) { animation: none; } }
+  @media (max-width: 560px) { .interop-node { display: block; } .interop-node strong { display: block; margin-top: .2rem; } .interop-outputs { grid-template-columns: auto 1fr; } .interop-outputs .interop-arrow:nth-of-type(2) { display: none; } }
 </style>
