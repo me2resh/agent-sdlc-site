@@ -1,0 +1,36 @@
+---
+import Layout from '../layouts/StandardLayout.astro';
+---
+<Layout title="Validate"><section class="page validator-page">
+  <p class="eyebrow">LOCAL VALIDATION</p>
+  <h1>Check a standards artefact.</h1>
+  <p class="lede">Validation runs in your browser. Your document is not uploaded or stored.</p>
+  <div class="validator-controls">
+    <label>Standard<select id="validator-kind"><option value="agdr">AgDR Markdown</option><option value="orbit">ORBIT JSON</option></select></label>
+    <label>File<input id="validator-file" type="file" accept=".md,.json,text/markdown,application/json" /></label>
+  </div>
+  <label class="validator-input">Paste a document<textarea id="validator-input" rows="16" spellcheck="false" placeholder="Paste AgDR Markdown or ORBIT JSON here"></textarea></label>
+  <div class="actions"><button class="button" id="validator-run" type="button">Validate document</button><button class="button quiet" id="validator-copy" type="button" disabled>Copy report</button></div>
+  <output id="validator-result" class="validator-result" aria-live="polite">Choose a standard and paste or open a document.</output>
+</section></Layout>
+<script>
+  import { validateDocument } from '@agent-sdlc/validator';
+  const kind = document.querySelector('#validator-kind');
+  const input = document.querySelector('#validator-input');
+  const file = document.querySelector('#validator-file');
+  const run = document.querySelector('#validator-run');
+  const copy = document.querySelector('#validator-copy');
+  const result = document.querySelector('#validator-result');
+  if (!(kind instanceof HTMLSelectElement) || !(input instanceof HTMLTextAreaElement) || !(file instanceof HTMLInputElement) || !(run instanceof HTMLButtonElement) || !(copy instanceof HTMLButtonElement) || !(result instanceof HTMLOutputElement)) throw new Error('Validator controls are missing.');
+  let report = '';
+  file?.addEventListener('change', async () => { const selected = file.files?.[0]; if (selected) input.value = await selected.text(); });
+  run.addEventListener('click', () => {
+    const selectedKind = kind.value === 'orbit' ? 'orbit' : 'agdr';
+    const diagnostics = validateDocument(selectedKind, input.value, { filename: file.files?.[0]?.name });
+    report = diagnostics.length ? diagnostics.map((item) => `${item.severity}: ${item.path}: ${item.message}`).join('\n') : `Valid ${kind.value} document.`;
+    result.textContent = report;
+    result.className = diagnostics.length ? 'validator-result is-invalid' : 'validator-result is-valid';
+    copy.disabled = false;
+  });
+  copy.addEventListener('click', () => navigator.clipboard.writeText(report));
+</script>

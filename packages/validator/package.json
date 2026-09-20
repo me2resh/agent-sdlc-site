@@ -1,0 +1,8 @@
+{
+  "name": "@agent-sdlc/validator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "agent-sdlc-validate": "./cli.js" },
+  "exports": { ".": { "types": "./index.d.ts", "import": "./index.js" } }
+}
