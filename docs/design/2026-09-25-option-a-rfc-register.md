@@ -42,6 +42,11 @@ The maintainer set four rules for the new design. Every value in
 - Neutrals: cool blue-gray tokens (`--bg`, `--surface`, `--text`,
   `--muted`, `--rule`, `--focus`). Each token holds its light mode value
   and its dark mode value once, in `light-dark()`.
+- Older browsers: a browser without `light-dark()` (for example Safari
+  13 to 17.4, or Firefox 96 to 119) reads an
+  `@supports not (color: light-dark(#000, #fff))` block in `tokens.css`.
+  That block holds the same values as plain hex. The build fails if the
+  two copies differ.
 - Theme method: the `color-scheme` property. The `data-theme` attribute
   on `<html>` sets it. With no attribute (JavaScript off), the page
   follows the OS setting.

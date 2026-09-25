@@ -4,7 +4,13 @@
 // reports it. Each "must pass" case asserts a known non-color is not
 // reported (no false positive). Nothing is written to disk.
 
-import { scanText, definedCustomProperties } from './lib/design-token-scan.mjs';
+import {
+  scanText,
+  definedCustomProperties,
+  checkLightDarkFallback,
+  SITE_EXTENSIONS,
+  PACKAGE_EXTENSIONS
+} from './lib/design-token-scan.mjs';
 
 const defined = definedCustomProperties(':root { --bg: #fff; --text: #000; }');
 
@@ -34,6 +40,18 @@ const mustFlag = [
   ['rgb() in .ts string', 'a.ts', 'export const c = "rgba(0, 0, 0, .5)";'],
   ['hex in public .html <style>', 'public/a.html', '<style>body { color: #111111; }</style>'],
   ['hex in public .html style=""', 'public/a.html', '<body style="background:#eee">'],
+  ['style="" in .md', 'a.md', 'Text <span style="color: red">x</span>.'],
+  ['style={{...}} in .mdx', 'a.mdx', "<p style={{ color: '#f00' }}>x</p>"],
+  ['hex in .scss', 'a.scss', '.a { .b { color: #abcdef; } }'],
+  ['hex string in .jsx', 'a.jsx', "export const C = () => <p data-c={'#00ff88'} />;"],
+  ['hex string in .json', 'a.json', '{ "accent": "#aabbcc" }'],
+  ['theme_color named in .webmanifest', 'a.webmanifest', '{ "theme_color": "white" }'],
+  ['background_color hex in .webmanifest', 'a.webmanifest', '{ "background_color": "#14161b" }'],
+  ['hex string in packages .ts', 'packages/x/src/a.ts', "export const bg = '#f1f3f6';"],
+  ['meta theme-color hex', 'a.astro', '<meta name="theme-color" content="#14161b" />'],
+  ['meta theme-color named, content first', 'a.html', "<meta content='black' name='theme-color'>"],
+  ['define:vars hex', 'a.astro', "<style define:vars={{ c: '#f00' }}>.a { color: var(--c); }</style>"],
+  ['define:vars named', 'a.astro', '<style define:vars={{ ink: "tomato" }}>.a { color: var(--ink); }</style>'],
 ];
 
 /** @type {[string, string, string][]} */
@@ -78,5 +96,49 @@ for (const [name, text] of [
   }
 }
 
+// The tree walk must scan each file type the planted cases above use.
+for (const ext of ['.md', '.mdx', '.scss', '.jsx', '.json', '.webmanifest', '.html', '.astro', '.ts']) {
+  if (!SITE_EXTENSIONS.has(ext)) {
+    failures++;
+    console.error(`  NOT SCANNED  apps/site *${ext}`);
+  }
+}
+for (const ext of ['.ts', '.js', '.css', '.scss']) {
+  if (!PACKAGE_EXTENSIONS.has(ext)) {
+    failures++;
+    console.error(`  NOT SCANNED  packages/ *${ext}`);
+  }
+}
+
+// The light-dark() tokens and their older-browser fallback must never drift.
+const goodTokens = `
+:root { --bg: light-dark(#f1f3f6, #14161b); --text: light-dark(#16181c, #eceef1); }
+@supports not (color: light-dark(#000, #fff)) {
+  :root { --bg: #f1f3f6; --text: #16181c; }
+  html[data-theme='dark'] { --bg: #14161b; --text: #eceef1; }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme='light']) { --bg: #14161b; --text: #eceef1; }
+  }
+}`;
+const fallbackCases = [
+  ['matching fallback passes', goodTokens, false],
+  ['drifted light value', goodTokens.replace(':root { --bg: #f1f3f6;', ':root { --bg: #f1f3f7;'), true],
+  ['drifted forced-dark value', goodTokens.replace("html[data-theme='dark'] { --bg: #14161b;", "html[data-theme='dark'] { --bg: #000000;"), true],
+  ['drifted OS-dark value', goodTokens.replace("html:not([data-theme='light']) { --bg: #14161b;", "html:not([data-theme='light']) { --bg: #111111;"), true],
+  ['token missing from fallback', goodTokens.replace(' --text: #16181c; }', ' }'), true],
+  ['extra token only in fallback', goodTokens.replace(':root { --bg: #f1f3f6;', ':root { --stray: #ffffff; --bg: #f1f3f6;'), true],
+  ['no fallback block', goodTokens.slice(0, goodTokens.indexOf('@supports')), true],
+  ['no OS-dark media block', goodTokens.replace(/@media[\s\S]*?\}\s*\}/, ''), true],
+];
+for (const [name, css, shouldFail] of fallbackCases) {
+  const problems = checkLightDarkFallback(css);
+  if (shouldFail !== problems.length > 0) {
+    failures++;
+    console.error(`  FALLBACK CHECK WRONG  ${name}: ${problems.join('; ') || 'no problem reported'}`);
+  }
+}
+
 if (failures > 0) throw new Error(`design-token scanner self-test failed: ${failures} case(s)`);
-console.log(`design-token scanner self-test passed: ${mustFlag.length + 2} planted cases caught, ${mustPass.length} non-colors ignored`);
+console.log(
+  `design-token scanner self-test passed: ${mustFlag.length + 2} planted cases caught, ${mustPass.length} non-colors ignored, ${fallbackCases.length} fallback cases correct`
+);

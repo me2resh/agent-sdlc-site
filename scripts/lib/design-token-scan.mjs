@@ -15,6 +15,10 @@
 //   - An SVG paint attribute (fill, stroke, stop-color, flood-color,
 //     lighting-color, color) whose value is not none / currentColor /
 //     transparent / inherit / var(...) / url(...).
+//   - Any value of <meta name="theme-color" content="...">, of a web
+//     manifest "theme_color" / "background_color", and any color value in
+//     an Astro <style define:vars={{...}}> object. None of these can hold
+//     a token.
 //   - In script context (.ts/.js files, Astro frontmatter and <script>
 //     blocks, and any quoted string in markup): a string literal that
 //     holds a hex color or a color function. A URL fragment such as
@@ -22,6 +26,15 @@
 //     3- or 4-character "#123" (an issue number) outside CSS context.
 
 import { extname } from 'node:path';
+
+/** File types scanned under apps/site (src and public). */
+export const SITE_EXTENSIONS = new Set([
+  '.astro', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.css', '.scss', '.html', '.svg',
+  '.md', '.mdx', '.json', '.webmanifest'
+]);
+/** File types scanned under packages/ (tokens.css itself is excluded by the caller). */
+export const PACKAGE_EXTENSIONS = new Set(['.css', '.scss', '.ts', '.tsx', '.js', '.jsx', '.mjs']);
+const STYLESHEET_EXTENSIONS = new Set(['.css', '.scss']);
 
 export const NAMED_COLORS = new Set(`aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue
 blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue
@@ -84,10 +97,10 @@ export function literalColorsInStylesheet(css) {
   return declarationBlocks(css).flatMap(literalColorsInDeclarations);
 }
 
-/** Balanced {...} content that follows `style=` in Astro markup. */
-function astroStyleExpressions(text) {
+/** Balanced {...} content that follows `<attr>={` in Astro markup. */
+function braceExpressions(text, attr) {
   const out = [];
-  const re = /\sstyle=\{/g;
+  const re = new RegExp(`\\s${attr}=\\{`, 'g');
   let m;
   while ((m = re.exec(text))) {
     let depth = 1;
@@ -101,6 +114,11 @@ function astroStyleExpressions(text) {
     out.push(text.slice(start, i - 1));
   }
   return out;
+}
+
+/** Literal color in one bare value (hex, color function, or named color). */
+function literalColorsInValue(value) {
+  return literalColorsInDeclarations(`--value: ${value}`);
 }
 
 /** Turn a JS style expression ({color:'red'} or "color:red") into declarations. */
@@ -146,15 +164,28 @@ export function scanText(file, text) {
   const ext = extname(file);
   const literals = [];
 
-  if (ext === '.css') {
+  if (STYLESHEET_EXTENSIONS.has(ext)) {
     literals.push(...literalColorsInStylesheet(text));
   } else {
+    // 0a. <meta name="theme-color" content="..."> -- a meta tag cannot use a
+    //     token, so any value there is a literal color.
+    for (const m of text.matchAll(/<meta\b[^>]*>/gi)) {
+      if (!/\bname\s*=\s*["']theme-color["']/i.test(m[0])) continue;
+      const content = m[0].match(/\bcontent\s*=\s*["']([^"']*)["']/i);
+      if (content) literals.push(`theme-color="${content[1]}"`);
+    }
+    // 0b. Web manifest colors (JSON cannot use a token either).
+    for (const m of text.matchAll(/"(theme_color|background_color)"\s*:\s*"([^"]*)"/g)) literals.push(`${m[1]}="${m[2]}"`);
+    // 0c. Astro <style define:vars={{ name: 'value' }}>.
+    for (const expr of braceExpressions(text, 'define:vars')) {
+      for (const m of expr.matchAll(/(['"`])(.*?)\1/g)) literals.push(...literalColorsInValue(m[2]));
+    }
     // 1. <style> blocks (.astro, .html).
     for (const m of text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) literals.push(...literalColorsInStylesheet(m[1]));
     // 2. style="" / style='' attributes (markup, or markup inside a JS string).
     for (const m of text.matchAll(/\sstyle=(?:"([^"]*)"|'([^']*)')/gi)) literals.push(...literalColorsInDeclarations(m[1] ?? m[2] ?? ''));
     // 3. Astro style={...} expressions.
-    for (const expr of astroStyleExpressions(text)) literals.push(...literalColorsInDeclarations(styleExpressionToDeclarations(expr)));
+    for (const expr of braceExpressions(text, 'style'))literals.push(...literalColorsInDeclarations(styleExpressionToDeclarations(expr)));
     // 4. SVG paint attributes.
     for (const m of text.matchAll(SVG_PAINT_ATTR)) {
       const value = (m[2] ?? m[3] ?? m[5] ?? '').trim();
@@ -167,6 +198,69 @@ export function scanText(file, text) {
 
   const varRefs = [...text.matchAll(/var\(\s*(--[a-z0-9_-]+)/gi)].map(m => m[1]);
   return { literals: [...new Set(literals)], varRefs };
+}
+
+/** Text inside the braces that open at `openIndex` (the index of "{"). */
+function blockBody(css, openIndex) {
+  let depth = 0;
+  for (let i = openIndex; i < css.length; i++) {
+    if (css[i] === '{') depth++;
+    else if (css[i] === '}' && --depth === 0) return css.slice(openIndex + 1, i);
+  }
+  return '';
+}
+
+/** { name: value } for the plain `--name: value;` declarations in a block body. */
+function plainDeclarations(body) {
+  const out = {};
+  for (const m of body.matchAll(/(--[a-z0-9_-]+)\s*:\s*([^;{}]+);/gi)) out[m[1]] = m[2].trim().toLowerCase();
+  return out;
+}
+
+/**
+ * tokens.css holds each color twice: once as light-dark(<light>, <dark>)
+ * (current browsers) and once as plain hex in the
+ * `@supports not (color: light-dark(...))` fallback (older browsers).
+ * Returns a list of problems; empty when the two copies agree exactly.
+ * @param {string} rawCss
+ */
+export function checkLightDarkFallback(rawCss) {
+  const css = rawCss.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const problems = [];
+  const pairs = {};
+  for (const m of css.matchAll(/(--[a-z0-9_-]+)\s*:\s*light-dark\(\s*([^,()]+?)\s*,\s*([^,()]+?)\s*\)/gi)) {
+    pairs[m[1]] = { light: m[2].toLowerCase(), dark: m[3].toLowerCase() };
+  }
+  if (Object.keys(pairs).length === 0) return ['no light-dark() tokens found'];
+
+  const supportsAt = css.search(/@supports\s+not\s*\(\s*color\s*:\s*light-dark\(/i);
+  if (supportsAt === -1) return ['missing the @supports not (color: light-dark(...)) fallback block'];
+  const fallback = blockBody(css, css.indexOf('{', supportsAt));
+
+  const groups = [
+    [':root (light)', /:root\s*\{/, 'light'],
+    ["html[data-theme='dark'] (dark)", /html\[data-theme=['"]dark['"]\]\s*\{/, 'dark'],
+    ["prefers-color-scheme: dark html:not([data-theme='light']) (dark)", /html:not\(\[data-theme=['"]light['"]\]\)\s*\{/, 'dark'],
+  ];
+  for (const [label, selector, mode] of groups) {
+    const at = fallback.search(selector);
+    if (at === -1) {
+      problems.push(`fallback group missing: ${label}`);
+      continue;
+    }
+    const values = plainDeclarations(blockBody(fallback, fallback.indexOf('{', at)));
+    for (const [name, pair] of Object.entries(pairs)) {
+      if (values[name] === undefined) problems.push(`${label}: ${name} is missing`);
+      else if (values[name] !== pair[mode]) problems.push(`${label}: ${name} is ${values[name]}, light-dark() says ${pair[mode]}`);
+    }
+    for (const name of Object.keys(values)) {
+      if (!(name in pairs)) problems.push(`${label}: ${name} has no light-dark() token`);
+    }
+  }
+  if (!/@media\s*\(\s*prefers-color-scheme\s*:\s*dark\s*\)/i.test(fallback)) {
+    problems.push('fallback has no @media (prefers-color-scheme: dark) block');
+  }
+  return problems;
 }
 
 /** Custom property names declared in a stylesheet (e.g. tokens.css). */

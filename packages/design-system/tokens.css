@@ -76,6 +76,51 @@ html[data-theme='dark'] {
   --accent-agdr:       light-dark(#6a3e96, #b78fde);
 }
 
+/* Fallback for browsers without light-dark() (for example Safari 13 to
+   17.4, Firefox 96 to 119, Chrome 81 to 122). Those browsers support
+   color-scheme, so without this block they paint a dark canvas while every
+   token above is invalid -- black text on a near-black page. Current
+   browsers skip this block. The values here MUST equal the light-dark()
+   pairs above: scripts/validate-design-tokens.mjs fails the build if they
+   drift. */
+@supports not (color: light-dark(#000, #fff)) {
+  :root {
+    --bg: #f1f3f6;
+    --surface: #e4e7ec;
+    --text: #16181c;
+    --muted: #555a62;
+    --rule: #7b808a;
+    --focus: #2a4b8c;
+    --accent-agent-sdlc: #3b4fa0;
+    --accent-orbit: #166a63;
+    --accent-agdr: #6a3e96;
+  }
+  html[data-theme='dark'] {
+    --bg: #14161b;
+    --surface: #1d2026;
+    --text: #eceef1;
+    --muted: #a5aab2;
+    --rule: #6c7280;
+    --focus: #7c9ce0;
+    --accent-agent-sdlc: #8c9bdd;
+    --accent-orbit: #4fc7bc;
+    --accent-agdr: #b78fde;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme='light']) {
+      --bg: #14161b;
+      --surface: #1d2026;
+      --text: #eceef1;
+      --muted: #a5aab2;
+      --rule: #6c7280;
+      --focus: #7c9ce0;
+      --accent-agent-sdlc: #8c9bdd;
+      --accent-orbit: #4fc7bc;
+      --accent-agdr: #b78fde;
+    }
+  }
+}
+
 /* Per-standard identity. Each site keeps its own accent (indigo / teal /
    violet); shared components read the single --accent property so the same
    markup works unchanged on all three standards. StandardLayout.astro sets
