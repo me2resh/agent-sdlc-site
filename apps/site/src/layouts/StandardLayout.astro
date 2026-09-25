@@ -2,6 +2,7 @@
 import { currentSite, sites } from '../lib/site';
 import { agdrVersionBanner } from '../lib/agdr-changelog';
 import { canonicalUrl, socialImage } from '../lib/seo';
+import { menuLinks, type MenuLink } from '../lib/routes';
 import '@agent-sdlc/design-system/tokens.css';
 const key = currentSite(import.meta.env.PUBLIC_SITE_KEY);
 const site = sites[key];
@@ -13,10 +14,16 @@ const ogImage = canonicalUrl(key, socialImage.path);
 const version = key === 'agdr' ? agdrVersionBanner : key === 'orbit' ? 'ORBIT v0.1 · Draft' : 'Agent SDLC · Early ecosystem';
 const title = Astro.props.title ? `${Astro.props.title} — ${site.name}` : `${site.name} — ${site.kicker}`;
 const footerLabel = key === 'agentsdlc' ? 'Agent SDLC' : `${site.name} · Agent SDLC`;
-const footerContributeHref = key === 'orbit' || key === 'agentsdlc' ? '/contribute' : null;
-// All three sites render this list through the same flat .primary-nav
-// markup (#26). The ORBIT entries are the pages its menu showed before.
-const nav = key === 'orbit' ? [['Concepts','/concepts'],['Specification','/specification'],['Schemas','/schemas'],['Reconciliation','/reconciliation'],['Execution slices','/execution-slices'],['Adopter guide','/adopter-guide'],['Conformance','/conformance'],['Changelog','/changelog'],['Contribute','/contribute']] : key === 'agdr' ? [['Quick Start','/quick-start'],['Specification','/specification'],['Schema','/schema'],['Examples','/examples'],['Integrations','/integrations'],['Conformance','/conformance'],['Related standards','/related-standards']] : [['ORBIT','https://orbitspec.dev'],['AgDR','https://agdr.dev'],['Interoperability','/interoperability'],['About','/governance']];
+// The nav and the footer read the route registry (src/lib/routes.ts,
+// agent-sdlc-site#16). All three sites render the nav through the same flat
+// .primary-nav markup (#26).
+const currentPath = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const menuHref = (link: MenuLink) => link.owner === key ? link.path : `${sites[link.owner].canonicalUrl}${link.path === '/' ? '' : link.path}`;
+const isCurrent = (link: MenuLink) => link.owner === key && link.path === currentPath;
+const nav = menuLinks(key, 'nav');
+// Footer position 2 is the Source link. It goes to a GitHub repository,
+// not to a route, so it comes from the site config.
+const footerLinks = [...menuLinks(key, 'footer').map(link => ({ label: link.label, order: link.order, href: menuHref(link), current: isCurrent(link) })), { label: 'Source', order: 2, href: site.sourceRepo, current: false }].sort((a, b) => a.order - b.order);
 // Per-standard identity mark (Option A — "RFC Register"). Colored by
 // currentColor, so it inherits the shared --accent property that
 // tokens.css maps per `${key}-site` body class.
@@ -53,7 +60,7 @@ const marks: Record<typeof key, string> = {
     root.dataset.theme = saved === 'light' || saved === 'dark' ? saved : (prefersDark ? 'dark' : 'light');
   })();
 </script>
-</head><body class={`${key}-site`}><header><div class="header-top"><div class="brand-line"><a href={key === 'agentsdlc' ? '/' : 'https://agentsdlc.ai'} class="brand" set:html={`${marks[key]}<span class="brand-name">${key === 'agentsdlc' ? '~/agent-sdlc' : site.name}</span>`} /><span class="version">{version}</span></div><div class="header-actions">{key !== 'agentsdlc' && <a class="utility" href="https://agentsdlc.ai">Agent SDLC ↗</a>}<a class="utility" href={site.sourceRepo}>GitHub ↗</a><button class="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle color theme">☼</button></div></div><nav class="primary-nav">{nav.map(([label,href]) => <a href={href}>{label}</a>)}</nav></header><main><slot /></main><footer><span>{footerLabel}</span><a href="https://agentsdlc.ai">About Agent SDLC</a><a href={site.sourceRepo}>Source</a>{footerContributeHref && <a href={footerContributeHref}>Contribute</a>}<span class="maintained-by">Maintained by ApexYard</span></footer></body></html>
+</head><body class={`${key}-site`}><a class="skip-link" href="#main">Skip to main content</a><header><div class="header-top"><div class="brand-line"><a href={key === 'agentsdlc' ? '/' : 'https://agentsdlc.ai'} class="brand" set:html={`${marks[key]}<span class="brand-name">${key === 'agentsdlc' ? '~/agent-sdlc' : site.name}</span>`} /><span class="version">{version}</span></div><div class="header-actions">{key !== 'agentsdlc' && <a class="utility" href="https://agentsdlc.ai">Agent SDLC ↗</a>}<a class="utility" href={site.sourceRepo}>GitHub ↗</a><button class="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle color theme">☼</button></div></div><nav class="primary-nav" aria-label="Primary">{nav.map(link => <a href={menuHref(link)} aria-current={isCurrent(link) ? 'page' : undefined}>{link.label}</a>)}</nav></header><main id="main" tabindex="-1"><slot /></main><footer><span>{footerLabel}</span>{footerLinks.map(link => <a href={link.href} aria-current={link.current ? 'page' : undefined}>{link.label}</a>)}<span class="maintained-by">Maintained by ApexYard</span></footer></body></html>
 <script is:inline>
   const root = document.documentElement;
   document.querySelector('.theme-toggle')?.addEventListener('click', () => {
@@ -85,6 +92,11 @@ h1, h2, h3 { font-weight: 700; }
 a { color: var(--accent); }
 nav a, footer a { text-decoration: none; }
 
+/* ---- skip link: off screen until it gets keyboard focus ---- */
+.skip-link { position: absolute; top: .75rem; left: .75rem; z-index: 10; padding: .6rem .9rem; background: var(--bg); color: var(--text); border: 1px solid var(--rule); border-radius: var(--radius-sm); font: 600 .9rem var(--font-mono); transform: translateY(-200%); }
+.skip-link:focus { transform: none; }
+#main:focus { outline: none; }
+
 /* ---- header ---- */
 header, main, footer { max-width: 1120px; margin: auto; padding: 1.25rem 1.5rem; }
 header, footer { border-color: var(--rule); }
@@ -112,6 +124,9 @@ nav { display: flex; gap: 1rem; font-size: .9rem; }
    color (agent-sdlc-site#17, rule 4). */
 .eyebrow, .section-label { color: var(--muted); font-weight: 600; }
 .section-label { margin: 0; }
+/* A section title that is a real heading keeps the look of the plain
+   label (agent-sdlc-site#16). */
+.page h2.section-label { font: 600 var(--text-small)/1.4 var(--font-mono); letter-spacing: normal; color: var(--muted); margin: 0; }
 .pathbar { margin: 0 0 2.5rem; color: var(--muted); }
 .meta { color: var(--muted); }
 
@@ -360,6 +375,7 @@ footer a { display: inline-block; }
   .rows p { display: block; }
   .rows span { display: block; margin-top: .2rem; }
   .card-grid { grid-template-columns: 1fr; }
+  .role-grid, .example-index { grid-template-columns: 1fr; }
   .guide-links { grid-template-columns: 1fr 1fr; }
   .adoption-steps, .adoption-records { grid-template-columns: 1fr; }
   .resource-grid { grid-template-columns: 1fr; }
