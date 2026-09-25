@@ -8,6 +8,11 @@
 //   - an internal target is not a file in the same build,
 //   - an external target is not on one of the three canonical hosts, or is
 //     not an https URL,
+//   - an external target is not a built file on its site, and is not in
+//     pendingTargets (config/redirects.ts). A pending target that is built,
+//     or that no entry uses, also fails, so the list stays current,
+//   - a 301 has a Cache-Control other than max-age=3600, or a 302 has a
+//     Cache-Control other than no-store,
 //   - a target is also a key (a chain or a loop), on the same site or on
 //     the site of an external target. The edge slash 301 counts as a hop,
 //     so a target with a trailing slash is a chain too,
@@ -22,7 +27,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { builtUrls } from './generate-url-inventory.mjs';
-import { redirects, redirectsDocument } from '../config/redirects.ts';
+import { cacheControl, pendingTargets, redirects, redirectsDocument } from '../config/redirects.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const dist = join(root, 'apps/site/dist');
@@ -61,6 +66,8 @@ for (const site of SITES) {
 }
 
 let entryCount = 0;
+/** @type {Set<string>} */
+const usedPending = new Set();
 for (const site of SITES) {
   for (const { from, to, code } of redirects[site] ?? []) {
     entryCount++;
@@ -86,10 +93,27 @@ for (const site of SITES) {
       targetPath = url.pathname;
       if (url.protocol !== 'https:' || !targetSite) problems.push(`${where}: target ${to} is not on a canonical host (${Object.values(origins).join(', ')})`);
       if (url.search) problems.push(`${where}: target ${to} has a query string`);
+      // The target must exist on its site, or be a listed pending target.
+      const targetUrl = `${url.origin}${url.pathname}`;
+      if (targetSite && !built[targetSite].has(url.pathname) && !keys[targetSite].has(url.pathname) && !pendingTargets[targetUrl]) {
+        problems.push(`${where}: external target ${to} is not a built file on ${targetSite}, and pendingTargets in config/redirects.ts does not list it`);
+      }
+      if (pendingTargets[targetUrl]) usedPending.add(targetUrl);
     }
+    const expectedCache = code === 301 ? 'max-age=3600' : 'no-store';
+    if (cacheControl[code] !== expectedCache) problems.push(`${where}: code ${code} has Cache-Control ${cacheControl[code]}, expected ${expectedCache}`);
     if (!oneForm(targetPath)) problems.push(`${where}: target ${to} has a trailing slash, so the edge slash 301 adds a second hop`);
     if (targetSite && keys[targetSite]?.has(targetPath.replace(/#.*$/, ''))) problems.push(`${where}: target ${to} is also a redirect key (a chain or a loop)`);
   }
+}
+
+// The pending-target list stays current: each URL is used and not built yet.
+for (const [url, pr] of Object.entries(pendingTargets)) {
+  const parsed = new URL(url);
+  const site = siteByOrigin[parsed.origin];
+  if (!site) problems.push(`pendingTargets: ${url} is not on a canonical host`);
+  else if (built[site].has(parsed.pathname)) problems.push(`pendingTargets: ${url} is now built on ${site}. Remove it from the list (added by ${pr}).`);
+  if (!usedPending.has(url)) problems.push(`pendingTargets: ${url} is the target of no redirect entry. Remove it from the list.`);
 }
 
 // Every inventory URL still works: a built file or a redirect key.

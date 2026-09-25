@@ -9,7 +9,9 @@
 //   - No key and no target has a trailing slash, except the root "/".
 //   - A key is not also a file in the same build.
 //   - An internal target is a file in the same build.
-//   - An external target is on one of the three canonical hosts.
+//   - An external target is on one of the three canonical hosts, and is a
+//     built file on that site, or is listed in pendingTargets below.
+//   - Each 301 has Cache-Control max-age=3600. Each 302 has no-store.
 //   - No chain and no loop: a target is never a key, on the same site or on
 //     the site of an external target.
 //   - Each URL in config/url-inventory/<site>.txt is a file or a key.
@@ -94,6 +96,24 @@ export const redirects: Record<StandardKey, readonly Redirect[]> = {
     { from: '/standards', to: `${AGENTSDLC}/standards`, code: 301, reason: 'agentsdlc.ai page, built on the wrong site (#31).' },
     ...orbitSchemaFiles
   ]
+};
+
+/**
+ * External redirect targets that no build serves yet, because a later PR of
+ * design #18 adds them (section 7.2). scripts/validate-redirects.mjs
+ * requires every other external target to be a built file on its site. It
+ * fails when a URL in this list is built, so remove the URL in the PR that
+ * adds it. Until that PR merges, a redirect to one of these URLs leads to a
+ * 404 at the edge (design #18, PR 2b row).
+ */
+export const pendingTargets: Readonly<Record<string, string>> = {
+  [`${AGDR}/spec/1.2.0/spec.md`]: 'PR 4',
+  [`${AGDR}/schema/agdr/v1.2.json`]: 'PR 5',
+  [`${AGDR}/schema/agdr-json/draft.json`]: 'PR 5',
+  [`${ORBIT}/schema/plan/v0.1.json`]: 'PR 7',
+  [`${ORBIT}/schema/project-snapshot/v0.1.json`]: 'PR 7',
+  [`${ORBIT}/schema/reconciliation/v0.1.json`]: 'PR 7',
+  [`${ORBIT}/schema/execution-slice/v0.1.json`]: 'PR 7'
 };
 
 /** The site-prefixed key of an entry in the edge KeyValueStore (design #18 section 4.3). */
