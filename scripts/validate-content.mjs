@@ -5,6 +5,7 @@ const root = new URL('..', import.meta.url).pathname;
 const read = file => readFileSync(join(root, file), 'utf8');
 for (const file of [
   'apps/site/src/data/agdr/agdr.schema.json',
+  'apps/site/src/data/agdr/agdr-json.schema.json',
   'apps/site/src/data/orbit/plan.schema.json',
   'apps/site/src/data/orbit/project-snapshot.schema.json',
   'apps/site/src/data/orbit/reconciliation.schema.json',
@@ -19,4 +20,15 @@ for (const site of ['agentsdlc', 'orbit', 'agdr']) {
 }
 const agdrBuild = readFileSync(join(root, 'apps/site/dist/agdr/specification/index.html'), 'utf8');
 if (agdrBuild.includes('Keep execution aligned with durable outcomes.')) throw new Error('AgDR build contains ORBIT specification copy');
-console.log('content validation passed: schemas parse and AgDR identity is isolated');
+if (!agdrBuild.includes('JSON serialisation')) throw new Error('AgDR specification page is missing the JSON serialisation section');
+
+if (!agdrBuild.includes('Status: unreleased.') || !agdrBuild.includes('is not part of AgDR 1.2.0')) throw new Error('AgDR specification page is missing the unreleased notice for section 9');
+
+const agdrSpecMdBuild = readFileSync(join(root, 'apps/site/dist/agdr/agdr-spec.md'), 'utf8');
+const section9 = agdrSpecMdBuild.indexOf('## 9. JSON serialisation');
+if (section9 === -1) throw new Error('/agdr-spec.md build output is missing section 9 (JSON serialisation)');
+const notice = agdrSpecMdBuild.indexOf('> **Note from agdr.dev:** Unreleased.');
+if (notice === -1 || notice > section9) throw new Error('/agdr-spec.md build output is missing the unreleased notice above section 9');
+if (/section 9[^\n]*published/i.test(agdrSpecMdBuild + agdrBuild)) throw new Error('AgDR output calls section 9 published');
+
+console.log('content validation passed: schemas parse, AgDR identity is isolated, and section 9 is present and marked unreleased');

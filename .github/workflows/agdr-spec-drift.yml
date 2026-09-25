@@ -1,0 +1,26 @@
+name: AgDR spec drift report
+
+# Compares the pinned AgDR spec files (scripts/agdr-spec-source.mjs) with
+# the source repository's main branch. Report only: it does not change
+# files, open issues, or deploy. It never runs on pull requests, so fork
+# PRs cannot trigger it. See docs/design/2026-09-25-agdr-spec-sync.md.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/report-agdr-spec-drift.mjs main
