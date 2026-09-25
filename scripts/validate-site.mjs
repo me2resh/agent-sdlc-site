@@ -20,3 +20,6 @@ for (const site of ['agentsdlc', 'orbit', 'agdr']) {
   if (!existsSync(index)) throw new Error(`Missing built entrypoint: ${index}`);
 }
 console.log('site validation passed: registry, required files, and all site builds are present');
+
+// Sitemaps, canonical URLs, favicons, and social tags (agent-sdlc-site#15).
+await import('./validate-sitemaps.mjs');
