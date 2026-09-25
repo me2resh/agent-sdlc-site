@@ -17,6 +17,10 @@ export type ResourceExample = {
   slug: string;
   record: JsonObject;
   sourcePath: string;
+  // Path to the same file inside https://github.com/me2resh/orbit-spec — the public
+  // repository that is the source of record for the "View source" link. sourcePath
+  // above stays as the in-repo path used only for internal documentation purposes.
+  orbitSpecPath: string;
 };
 
 export type ResourceDefinition = {
@@ -29,13 +33,16 @@ export type ResourceDefinition = {
   schema: JsonObject;
   schemaPath: string;
   sourcePath: string;
+  // Path to the same schema file inside https://github.com/me2resh/orbit-spec. See the
+  // note on ResourceExample.orbitSpecPath.
+  orbitSpecPath: string;
   examples: ResourceExample[];
   relationships: { name: string; reference: string; meaning: string }[];
   invariants: string[];
   related: { label: string; href: string }[];
 };
 
-const example = (label: string, slug: string, record: JsonObject, sourcePath: string): ResourceExample => ({ label, slug, record, sourcePath });
+const example = (label: string, slug: string, record: JsonObject, sourcePath: string, orbitSpecPath: string): ResourceExample => ({ label, slug, record, sourcePath, orbitSpecPath });
 
 export const resources: ResourceDefinition[] = [
   {
@@ -43,8 +50,8 @@ export const resources: ResourceDefinition[] = [
     description: 'Durable planning intent and desired outcomes.',
     purpose: 'A durable declaration of intent, outcomes, acceptance criteria, and the planning context that should survive execution cycles.',
     references: 'Project', schema: planSchema as JsonObject,
-    schemaPath: '/schema/plan.schema.json', sourcePath: 'apps/site/src/data/orbit/plan.schema.json',
-    examples: [example('Minimal Plan', 'minimal', planMinimal as JsonObject, 'apps/site/src/data/orbit/examples/plan-minimal.json'), example('Complete Plan', 'customer-sso', planComplete as JsonObject, 'apps/site/src/data/orbit/examples/plan-sso.json')],
+    schemaPath: '/schema/plan.schema.json', sourcePath: 'apps/site/src/data/orbit/plan.schema.json', orbitSpecPath: 'schema/plan.schema.json',
+    examples: [example('Minimal Plan', 'minimal', planMinimal as JsonObject, 'apps/site/src/data/orbit/examples/plan-minimal.json', 'examples/plan-minimal.json'), example('Complete Plan', 'customer-sso', planComplete as JsonObject, 'apps/site/src/data/orbit/examples/plan-sso.json', 'examples/plan-sso.json')],
     relationships: [
       { name: 'Project', reference: 'project.id', meaning: 'Identifies the project whose durable intent this Plan describes.' },
       { name: 'Outcomes', reference: 'outcomes[].id', meaning: 'Groups one or more desired results within the Plan.' },
@@ -58,8 +65,8 @@ export const resources: ResourceDefinition[] = [
     description: 'Point-in-time observed project and repository state.',
     purpose: 'A factual observation of project and repository state at a specific time.',
     references: 'Project, repositories', schema: snapshotSchema as JsonObject,
-    schemaPath: '/schema/project-snapshot.schema.json', sourcePath: 'apps/site/src/data/orbit/project-snapshot.schema.json',
-    examples: [example('Minimal Project Snapshot', 'minimal', snapshotMinimal as JsonObject, 'apps/site/src/data/orbit/examples/project-snapshot-minimal.json'), example('Complete Project Snapshot', 'customer-platform', snapshotComplete as JsonObject, 'apps/site/src/data/orbit/examples/project-snapshot-2026-09-14.json')],
+    schemaPath: '/schema/project-snapshot.schema.json', sourcePath: 'apps/site/src/data/orbit/project-snapshot.schema.json', orbitSpecPath: 'schema/project-snapshot.schema.json',
+    examples: [example('Minimal Project Snapshot', 'minimal', snapshotMinimal as JsonObject, 'apps/site/src/data/orbit/examples/project-snapshot-minimal.json', 'examples/project-snapshot-minimal.json'), example('Complete Project Snapshot', 'customer-platform', snapshotComplete as JsonObject, 'apps/site/src/data/orbit/examples/project-snapshot-2026-09-14.json', 'examples/project-snapshot-2026-09-14.json')],
     relationships: [
       { name: 'Project', reference: 'project.id', meaning: 'Identifies the project whose state was observed.' },
       { name: 'Repositories', reference: 'repositories[].repositoryId', meaning: 'Names each repository and records its branch and commit.' }
@@ -72,8 +79,8 @@ export const resources: ResourceDefinition[] = [
     description: 'Structured assessment of a Plan against current evidence.',
     purpose: 'An assessment of a Plan revision against a ProjectSnapshot, with observations, criterion assessments, and planning-relevant discoveries.',
     references: 'Plan revision, ProjectSnapshot, Acceptance Criteria', schema: reconciliationSchema as JsonObject,
-    schemaPath: '/schema/reconciliation.schema.json', sourcePath: 'apps/site/src/data/orbit/reconciliation.schema.json',
-    examples: [example('Minimal Reconciliation', 'minimal', reconciliationMinimal as JsonObject, 'apps/site/src/data/orbit/examples/reconciliation-minimal.json'), example('Complete Reconciliation', 'partial-verification', reconciliationComplete as JsonObject, 'apps/site/src/data/orbit/examples/reconciliation-001.json')],
+    schemaPath: '/schema/reconciliation.schema.json', sourcePath: 'apps/site/src/data/orbit/reconciliation.schema.json', orbitSpecPath: 'schema/reconciliation.schema.json',
+    examples: [example('Minimal Reconciliation', 'minimal', reconciliationMinimal as JsonObject, 'apps/site/src/data/orbit/examples/reconciliation-minimal.json', 'examples/reconciliation-minimal.json'), example('Complete Reconciliation', 'partial-verification', reconciliationComplete as JsonObject, 'apps/site/src/data/orbit/examples/reconciliation-001.json', 'examples/reconciliation-001.json')],
     relationships: [
       { name: 'Plan', reference: 'planId + planRevision', meaning: 'Identifies the exact Plan revision being assessed.' },
       { name: 'ProjectSnapshot', reference: 'projectSnapshotId', meaning: 'Identifies the observed project state used for the assessment.' },
@@ -87,8 +94,8 @@ export const resources: ResourceDefinition[] = [
     description: 'The next bounded change justified by current evidence.',
     purpose: 'A bounded, execution-ready change derived from a Reconciliation and tied to the Plan revision and repository state that justified it.',
     references: 'Plan revision, Outcome, Reconciliation, Acceptance Criteria, repository provenance', schema: sliceSchema as JsonObject,
-    schemaPath: '/schema/execution-slice.schema.json', sourcePath: 'apps/site/src/data/orbit/execution-slice.schema.json',
-    examples: [example('Minimal Execution Slice', 'minimal', sliceMinimal as JsonObject, 'apps/site/src/data/orbit/examples/slice-minimal.json'), example('Complete Execution Slice', 'customer-sso', sliceComplete as JsonObject, 'apps/site/src/data/orbit/examples/slice-001.json')],
+    schemaPath: '/schema/execution-slice.schema.json', sourcePath: 'apps/site/src/data/orbit/execution-slice.schema.json', orbitSpecPath: 'schema/execution-slice.schema.json',
+    examples: [example('Minimal Execution Slice', 'minimal', sliceMinimal as JsonObject, 'apps/site/src/data/orbit/examples/slice-minimal.json', 'examples/slice-minimal.json'), example('Complete Execution Slice', 'customer-sso', sliceComplete as JsonObject, 'apps/site/src/data/orbit/examples/slice-001.json', 'examples/slice-001.json')],
     relationships: [
       { name: 'Based on', reference: 'basedOn.planRevision + basedOn.reconciliationId', meaning: 'Identifies the Plan revision and Reconciliation that justified this slice.' },
       { name: 'Advances', reference: 'outcomeId', meaning: 'Links the bounded change to an Outcome in the Plan.' },
