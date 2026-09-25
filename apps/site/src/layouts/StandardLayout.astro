@@ -14,7 +14,9 @@ const version = key === 'agdr' ? agdrVersionBanner : key === 'orbit' ? 'ORBIT v0
 const title = Astro.props.title ? `${Astro.props.title} — ${site.name}` : `${site.name} — ${site.kicker}`;
 const footerLabel = key === 'agentsdlc' ? 'Agent SDLC' : `${site.name} · Agent SDLC`;
 const footerContributeHref = key === 'orbit' || key === 'agentsdlc' ? '/contribute' : null;
-const nav = key === 'orbit' ? [['Concepts','/concepts'],['Quick Start','/quick-start'],['Specification','/specification'],['Schemas','/schemas'],['Reconciliation','/reconciliation'],['Execution Slices','/execution-slices'],['Implementation','/adopter-guide'],['Conformance','/conformance'],['Changelog','/changelog'],['Contribute','/contribute']] : key === 'agdr' ? [['Quick Start','/quick-start'],['Specification','/specification'],['Schema','/schema'],['Examples','/examples'],['Integrations','/integrations'],['Conformance','/conformance'],['Related standards','/related-standards']] : [['ORBIT','https://orbitspec.dev'],['AgDR','https://agdr.dev'],['Interoperability','/interoperability'],['About','/governance']];
+// All three sites render this list through the same flat .primary-nav
+// markup (#26). The ORBIT entries are the pages its menu showed before.
+const nav = key === 'orbit' ? [['Concepts','/concepts'],['Specification','/specification'],['Schemas','/schemas'],['Reconciliation','/reconciliation'],['Execution slices','/execution-slices'],['Adopter guide','/adopter-guide'],['Conformance','/conformance'],['Changelog','/changelog'],['Contribute','/contribute']] : key === 'agdr' ? [['Quick Start','/quick-start'],['Specification','/specification'],['Schema','/schema'],['Examples','/examples'],['Integrations','/integrations'],['Conformance','/conformance'],['Related standards','/related-standards']] : [['ORBIT','https://orbitspec.dev'],['AgDR','https://agdr.dev'],['Interoperability','/interoperability'],['About','/governance']];
 // Per-standard identity mark (Option A — "RFC Register"). Colored by
 // currentColor, so it inherits the shared --accent property that
 // tokens.css maps per `${key}-site` body class.
@@ -51,7 +53,7 @@ const marks: Record<typeof key, string> = {
     root.dataset.theme = saved === 'light' || saved === 'dark' ? saved : (prefersDark ? 'dark' : 'light');
   })();
 </script>
-</head><body class={`${key}-site`}><header><div class="header-top"><div class="brand-line"><a href={key === 'agentsdlc' ? '/' : 'https://agentsdlc.ai'} class="brand" set:html={`${marks[key]}<span class="brand-name">${key === 'agentsdlc' ? '~/agent-sdlc' : site.name}</span>`} /><span class="version">{version}</span></div><div class="header-actions">{key !== 'agentsdlc' && <a class="utility" href="https://agentsdlc.ai">Agent SDLC ↗</a>}<a class="utility" href={site.sourceRepo}>GitHub ↗</a><button class="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle color theme">☼</button></div></div><nav class={key === 'orbit' ? 'primary-nav orbit-nav' : 'primary-nav'}>{key === 'orbit' ? <><div><span>Learn</span><a href="/concepts">Concepts</a></div><div><span>Reference</span><a href="/specification">Specification</a><a href="/schemas">Schemas</a><a href="/reconciliation">Reconciliation</a><a href="/execution-slices">Execution slices</a></div><div><span>Adopt</span><a href="/adopter-guide">Adopter guide</a><a href="/conformance">Conformance</a></div><div><span>Project</span><a href="/changelog">Changelog</a><a href="/contribute">Contribute</a></div></> : nav.map(([label,href]) => <a href={href}>{label}</a>)}</nav></header><main><slot /></main><footer><span>{footerLabel}</span><a href="https://agentsdlc.ai">About Agent SDLC</a><a href={site.sourceRepo}>Source</a>{footerContributeHref && <a href={footerContributeHref}>Contribute</a>}<span class="maintained-by">Maintained by ApexYard</span></footer></body></html>
+</head><body class={`${key}-site`}><header><div class="header-top"><div class="brand-line"><a href={key === 'agentsdlc' ? '/' : 'https://agentsdlc.ai'} class="brand" set:html={`${marks[key]}<span class="brand-name">${key === 'agentsdlc' ? '~/agent-sdlc' : site.name}</span>`} /><span class="version">{version}</span></div><div class="header-actions">{key !== 'agentsdlc' && <a class="utility" href="https://agentsdlc.ai">Agent SDLC ↗</a>}<a class="utility" href={site.sourceRepo}>GitHub ↗</a><button class="theme-toggle" type="button" aria-label="Toggle color theme" title="Toggle color theme">☼</button></div></div><nav class="primary-nav">{nav.map(([label,href]) => <a href={href}>{label}</a>)}</nav></header><main><slot /></main><footer><span>{footerLabel}</span><a href="https://agentsdlc.ai">About Agent SDLC</a><a href={site.sourceRepo}>Source</a>{footerContributeHref && <a href={footerContributeHref}>Contribute</a>}<span class="maintained-by">Maintained by ApexYard</span></footer></body></html>
 <script is:inline>
   const root = document.documentElement;
   document.querySelector('.theme-toggle')?.addEventListener('click', () => {
@@ -305,14 +307,7 @@ footer a { display: inline-block; }
 .flow-arrow { display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 1.4rem; }
 .orbit-handoff { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: .65rem; margin: 1.5rem 0; }
 
-/* ---- orbit nav / home ---- */
-.orbit-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding-top: 1.15rem; }
-.orbit-nav div { display: flex; flex-wrap: wrap; gap: .35rem .8rem; align-items: baseline; }
-.orbit-nav span { width: 100%; font: .72rem var(--font-mono); color: var(--muted); }
-.orbit-nav a { font-size: .85rem; }
-.orbit-nav > div { display: block; min-width: 0; }
-.orbit-nav > div > span { display: block; margin-bottom: .35rem; }
-.orbit-nav > div > a { display: inline-block; margin-right: .7rem; }
+/* ---- orbit home ---- */
 .orbit-site main { max-width: 1120px; margin: auto; padding: 0 1.5rem; }
 .orbit-site .page { max-width: 920px; padding-top: 4.5rem; }
 .orbit-site .page.wide { max-width: 1120px; }
@@ -350,7 +345,6 @@ footer a { display: inline-block; }
   .stale-flow { padding-top: 0; }
 }
 @media (max-width: 850px) {
-  .orbit-nav { grid-template-columns: repeat(2, 1fr); }
   .orbit-home-grid { grid-template-columns: 1fr 1fr; }
   .orbit-home-loop { grid-template-columns: 1fr 1fr 1fr; }
 }
@@ -373,7 +367,6 @@ footer a { display: inline-block; }
   .field-table { font-size: .8rem; }
 }
 @media (max-width: 560px) {
-  .orbit-nav { grid-template-columns: 1fr; }
   .orbit-home-grid, .orbit-home-loop { grid-template-columns: 1fr; }
   .orbit-home-note { display: block; }
   .orbit-home-note a { display: inline-block; margin-top: 1rem; }
