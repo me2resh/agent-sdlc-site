@@ -2,10 +2,11 @@ name: Site checks
 
 # Builds and checks every pull request, including a fork pull request,
 # under the `pull_request` event. `pull_request` gives the job a
-# read-only token, no repository secrets, and a build cache scoped to
-# the pull request rather than shared with the base branch. The staging
-# deploy workflow (deploy.yml) reads the uploaded artifact from here; it
-# never checks out or runs this code itself.
+# read-only token and a build cache scoped to the pull request rather
+# than shared with the base branch. This job references no secrets, so
+# no secret is available to it, from a fork pull request or otherwise.
+# The staging deploy workflow (deploy.yml) reads the uploaded artifact
+# from here; it never checks out or runs this code itself.
 on:
   pull_request:
   push:

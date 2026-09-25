@@ -11,12 +11,17 @@ name: Deploy standards sites to staging
 # triggered the run it is reacting to — so a fork pull request cannot
 # rewrite this file to reach the staging AWS role.
 #
-# Guard: `github.event.workflow_run.pull_requests` is empty when the
-# completed "Site checks" run came from a fork pull request, and holds
-# the pull request only when its head repository is this same
-# repository. Every job below checks that array before it runs, which
-# is what keeps a fork pull request away from AWS credentials. This
-# replaces the previous `pull_request_target` trigger, which ran the
+# Guard: every job below requires BOTH
+#   - `github.event.workflow_run.head_repository.full_name == github.repository`,
+#     the authoritative source-of-run check, GitHub's own record of which
+#     repository the completed run built from, and
+#   - `github.event.workflow_run.pull_requests[0] != null`, used only to
+#     read the pull request number (for the concurrency group and the
+#     staging comment).
+# `pull_requests` is a derived, best-effort field (GitHub does not
+# document it as a security boundary), so `head_repository` is the check
+# that actually keeps a fork pull request away from AWS credentials.
+# This replaces the previous `pull_request_target` trigger, which ran the
 # pull request's own build (`npm ci` / `npm run build:all`) in this
 # workflow's trusted context and let it write to the shared npm cache.
 on:
@@ -40,6 +45,7 @@ jobs:
     if: >
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.pull_requests[0] != null
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -58,6 +64,14 @@ jobs:
       STAGING_BUCKET: ${{ secrets.STAGING_BUCKET }}
       STAGING_DISTRIBUTION: ${{ secrets.STAGING_DISTRIBUTION }}
     steps:
+      - name: Check deploy configuration
+        shell: bash
+        run: |
+          missing=0
+          for v in AWS_ROLE_ARN STAGING_BUCKET STAGING_DISTRIBUTION; do
+            if [ -z "${!v}" ]; then echo "::error::Secret for $v is not configured"; missing=1; fi
+          done
+          exit "$missing"
       - name: Download the build from the checked run
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -69,12 +83,7 @@ jobs:
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Resolve target
-        id: target
-        shell: bash
-        run: |
-          test -n "$STAGING_BUCKET" || { echo "Staging bucket is not configured" >&2; exit 1; }
-          test -n "$STAGING_DISTRIBUTION" || { echo "Staging distribution is not configured" >&2; exit 1; }
+          mask-aws-account-id: true
       - name: Sync static site
         run: aws s3 sync "apps/site/dist/${{ matrix.site }}" "s3://${STAGING_BUCKET}/${{ matrix.site }}" --delete
       - name: Invalidate CloudFront
@@ -86,6 +95,7 @@ jobs:
     if: >
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.pull_requests[0] != null
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -98,7 +108,13 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = context.payload.workflow_run.pull_requests[0].number;
+            const pr = context.payload.workflow_run.pull_requests[0];
+            const runHeadSha = context.payload.workflow_run.head_sha;
+            if (!pr || pr.head.sha !== runHeadSha) {
+              core.info('Pull request head SHA does not match the checked run; skipping the staging comment.');
+              return;
+            }
+            const prNumber = pr.number;
             const body = [
               '### Staging deployment',
               '',

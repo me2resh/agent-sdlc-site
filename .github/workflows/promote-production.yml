@@ -1,18 +1,18 @@
 name: Promote standards sites to production
 
 # A merge to main publishes the same validated site build to production.
-# workflow_dispatch remains available for an explicit retry or a selected ref.
-# Both triggers require write access to this repository, so this workflow
-# never runs pull request code from a fork.
+# workflow_dispatch remains available for an explicit retry, and it takes
+# no `ref` input. An `inputs.ref` value used to let a dispatch build and
+# publish code from any branch, because the production environment's
+# branch-protection rule checks `github.ref` (the branch the dispatch
+# itself runs from), never `inputs.ref`. That gap let the two diverge.
+# Removing the input, and gating both jobs on
+# `github.ref == 'refs/heads/main'`, means every dispatch — like every
+# push — builds and deploys the commit already on `main`.
 on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      ref:
-        description: "Commit or branch that passed staging"
-        required: true
-        default: main
 
 permissions:
   contents: read
@@ -22,6 +22,7 @@ env:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -29,7 +30,6 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -46,6 +46,7 @@ jobs:
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -62,10 +63,14 @@ jobs:
       PRODUCTION_BUCKET: ${{ secrets.PRODUCTION_BUCKET }}
       PRODUCTION_DISTRIBUTION: ${{ secrets.PRODUCTION_DISTRIBUTION }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-        with:
-          ref: ${{ inputs.ref || github.ref }}
-          persist-credentials: false
+      - name: Check deploy configuration
+        shell: bash
+        run: |
+          missing=0
+          for v in AWS_ROLE_ARN PRODUCTION_BUCKET PRODUCTION_DISTRIBUTION; do
+            if [ -z "${!v}" ]; then echo "::error::Secret for $v is not configured"; missing=1; fi
+          done
+          exit "$missing"
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: standards-site-dist
@@ -74,10 +79,7 @@ jobs:
         with:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Validate production target
-        run: |
-          test -n "$PRODUCTION_BUCKET" || { echo "Production bucket is not configured" >&2; exit 1; }
-          test -n "$PRODUCTION_DISTRIBUTION" || { echo "Production distribution is not configured" >&2; exit 1; }
+          mask-aws-account-id: true
       - name: Sync static site
         run: aws s3 sync "apps/site/dist/${{ matrix.site }}" "s3://${PRODUCTION_BUCKET}/${{ matrix.site }}" --delete
       - name: Invalidate CloudFront
