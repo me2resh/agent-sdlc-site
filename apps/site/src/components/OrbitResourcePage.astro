@@ -1,11 +1,12 @@
 ---
 import Layout from '../layouts/StandardLayout.astro';
 import { fieldRows, type ResourceDefinition } from '../data/orbit/resources';
+import { sites } from '../lib/site';
 const resource = Astro.props.resource as ResourceDefinition;
 const rows = fieldRows(resource.schema);
 const completeExample = resource.examples[1];
 ---
-<Layout title={`${resource.displayName} resource`}><section class="page wide"><p class="pathbar">~/orbit/schemas/{resource.key}</p><p class="eyebrow">{resource.canonicalName} · ORBIT v0.1</p><h1>{resource.displayName}</h1><p class="type-label resource-canonical">{resource.canonicalName}</p><p class="lede">{resource.description}</p><div class="actions"><a class="button" href={resource.schemaPath}>View raw JSON Schema ↗</a><button class="button quiet copy-schema-url" type="button" data-schema-url={resource.schemaPath}>Copy schema URL</button><a class="button quiet" href={`/examples/${resource.key}/${completeExample.slug}`}>View examples →</a><a class="text-link" href={`https://github.com/me2resh/agent-sdlc-site/blob/main/${resource.sourcePath}`}>View source ↗</a></div>
+<Layout title={`${resource.displayName} resource`}><section class="page wide"><p class="pathbar">~/orbit/schemas/{resource.key}</p><p class="eyebrow">{resource.canonicalName} · ORBIT v0.1</p><h1>{resource.displayName}</h1><p class="type-label resource-canonical">{resource.canonicalName}</p><p class="lede">{resource.description}</p><div class="actions"><a class="button" href={resource.schemaPath}>View raw JSON Schema ↗</a><button class="button quiet copy-schema-url" type="button" data-schema-url={resource.schemaPath}>Copy schema URL</button><a class="button quiet" href={`/examples/${resource.key}/${completeExample.slug}`}>View examples →</a><a class="text-link" href={`${sites.orbit.sourceRepo}/blob/main/${resource.orbitSpecPath}`}>View source ↗</a></div>
 
 <section class="editorial" id="overview"><p class="section-label">OVERVIEW</p><p>{resource.purpose}</p><p class="resource-meta"><b>Canonical type</b> <code>{resource.canonicalName}</code><br /><b>References</b> {resource.references}</p></section>
 
