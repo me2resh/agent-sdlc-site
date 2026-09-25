@@ -1,12 +1,13 @@
 ---
 import Layout from '../layouts/StandardLayout.astro';
 import { type ResourceDefinition, type ResourceExample } from '../data/orbit/resources';
+import { sites } from '../lib/site';
 const resource = Astro.props.resource as ResourceDefinition;
 const example = Astro.props.example as ResourceExample;
 const json = JSON.stringify(example.record, null, 2);
 const rawPath = `/examples/${resource.key}/${example.slug}.json`;
 ---
-<Layout title={`${resource.displayName}: ${example.label}`}><section class="page wide"><p class="pathbar">~/orbit/examples/{resource.key}/{example.slug}</p><p class="eyebrow">{resource.canonicalName} · EXAMPLE</p><h1>{example.label}</h1><p class="lede">A {resource.displayName} resource example that validates against the canonical ORBIT schema.</p><div class="actions example-actions"><button class="button copy-json" type="button" data-copy-target="example-json">Copy JSON</button><a class="button quiet" href={rawPath}>View raw ↗</a><a class="button quiet" href={rawPath} download>Download JSON</a><a class="text-link" href={`https://github.com/me2resh/agent-sdlc-site/blob/main/${example.sourcePath}`}>View source ↗</a></div><section class="editorial"><p class="section-label">{resource.canonicalName} · {example.label}</p><pre id="example-json" class="code">{json}</pre><p class="meta">Validated against <a href={resource.schemaPath}>{resource.schemaPath}</a>. <a href={`/schemas/${resource.key}`}>Read the resource guide →</a></p></section></section></Layout>
+<Layout title={`${resource.displayName}: ${example.label}`}><section class="page wide"><p class="pathbar">~/orbit/examples/{resource.key}/{example.slug}</p><p class="eyebrow">{resource.canonicalName} · EXAMPLE</p><h1>{example.label}</h1><p class="lede">A {resource.displayName} resource example that validates against the canonical ORBIT schema.</p><div class="actions example-actions"><button class="button copy-json" type="button" data-copy-target="example-json">Copy JSON</button><a class="button quiet" href={rawPath}>View raw ↗</a><a class="button quiet" href={rawPath} download>Download JSON</a><a class="text-link" href={`${sites.orbit.sourceRepo}/blob/main/${example.orbitSpecPath}`}>View source ↗</a></div><section class="editorial"><p class="section-label">{resource.canonicalName} · {example.label}</p><pre id="example-json" class="code">{json}</pre><p class="meta">Validated against <a href={resource.schemaPath}>{resource.schemaPath}</a>. <a href={`/schemas/${resource.key}`}>Read the resource guide →</a></p></section></section></Layout>
 <script>
   document.querySelectorAll<HTMLButtonElement>('.copy-json').forEach(button => {
     button.addEventListener('click', async () => {
