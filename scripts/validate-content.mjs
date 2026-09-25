@@ -5,6 +5,7 @@ const root = new URL('..', import.meta.url).pathname;
 const read = file => readFileSync(join(root, file), 'utf8');
 for (const file of [
   'apps/site/src/data/agdr/agdr.schema.json',
+  'apps/site/src/data/agdr/agdr-json.schema.json',
   'apps/site/src/data/orbit/plan.schema.json',
   'apps/site/src/data/orbit/project-snapshot.schema.json',
   'apps/site/src/data/orbit/reconciliation.schema.json',
@@ -19,4 +20,9 @@ for (const site of ['agentsdlc', 'orbit', 'agdr']) {
 }
 const agdrBuild = readFileSync(join(root, 'apps/site/dist/agdr/specification/index.html'), 'utf8');
 if (agdrBuild.includes('Keep execution aligned with durable outcomes.')) throw new Error('AgDR build contains ORBIT specification copy');
-console.log('content validation passed: schemas parse and AgDR identity is isolated');
+if (!agdrBuild.includes('JSON serialisation')) throw new Error('AgDR specification page is missing the JSON serialisation section');
+
+const agdrSpecMdBuild = readFileSync(join(root, 'apps/site/dist/agdr/agdr-spec.md'), 'utf8');
+if (!agdrSpecMdBuild.includes('## 9. JSON serialisation')) throw new Error('/agdr-spec.md build output is missing section 9 (JSON serialisation)');
+
+console.log('content validation passed: schemas parse, AgDR identity is isolated, and JSON serialisation is present');

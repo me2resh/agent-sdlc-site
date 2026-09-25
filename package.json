@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "npm --workspace apps/site run dev",
     "build": "npm --workspace apps/site run build",
-    "check": "npm --workspace apps/site run check",
+    "check": "npm --workspace apps/site run check && npm run check:agdr-spec-sync",
+    "check:agdr-spec-sync": "node scripts/check-agdr-spec-sync.mjs",
+    "sync:agdr-spec": "node scripts/sync-agdr-spec.mjs",
     "build:agentsdlc": "PUBLIC_SITE_KEY=agentsdlc npm --workspace apps/site run build",
     "build:orbit": "PUBLIC_SITE_KEY=orbit npm --workspace apps/site run build",
     "build:agdr": "PUBLIC_SITE_KEY=agdr npm --workspace apps/site run build",
