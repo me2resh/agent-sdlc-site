@@ -2,7 +2,7 @@
 
 Date: 2026-09-25
 Ticket: me2resh/agent-sdlc-site#17
-Reverses: PR #9 ("feat(#1): share ApexYard design system across standards sites")
+Reverses: [PR #9](https://github.com/me2resh/agent-sdlc-site/pull/9) ("feat(#1): share ApexYard design system across standards sites")
 
 ## Decision
 
@@ -12,10 +12,10 @@ agentsdlc.ai, orbitspec.dev, and agdr.dev.
 
 ## Why
 
-PR #9 added the ApexYard "paper" tokens to the three standards sites. The
+[PR #9](https://github.com/me2resh/agent-sdlc-site/pull/9) added the ApexYard "paper" tokens to the three standards sites. The
 maintainer reviewed the result and rejected it. The maintainer said the
-site looked "Claude-designed." The paper tokens used a warm, blue-tinted
-background. This did not meet the maintainer's bar for a vendor-neutral
+site looked "Claude-designed." The paper tokens used a "paper"
+background color, which rule 1 below forbids. This did not meet the maintainer's bar for a vendor-neutral
 standards site.
 
 ## The rules this decision follows
@@ -39,8 +39,12 @@ The maintainer set four rules for the new design. Every value in
 
 - Type: Spectral (text and display) and Courier Prime (mono), both from
   Google Fonts.
-- Neutrals: one cool blue-gray token group for light mode, one for dark
-  mode (`--bg`, `--surface`, `--text`, `--muted`, `--rule`, `--focus`).
+- Neutrals: cool blue-gray tokens (`--bg`, `--surface`, `--text`,
+  `--muted`, `--rule`, `--focus`). Each token holds its light mode value
+  and its dark mode value once, in `light-dark()`.
+- Theme method: the `color-scheme` property. The `data-theme` attribute
+  on `<html>` sets it. With no attribute (JavaScript off), the page
+  follows the OS setting.
 - Accents: `--accent-agent-sdlc` (indigo), `--accent-orbit` (teal),
   `--accent-agdr` (violet). Each site maps its own accent onto the
   shared `--accent` property through a body class

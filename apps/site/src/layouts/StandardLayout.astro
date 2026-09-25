@@ -25,7 +25,19 @@ const marks: Record<typeof key, string> = {
   (function () {
     var root = document.documentElement;
     var saved = null;
-    try { saved = window.localStorage.getItem('theme'); } catch (err) { saved = null; }
+    /* 'orbit-theme' is the key the sites used before #17. Move a saved
+       value to the new key once, so a returning visitor keeps the theme. */
+    try {
+      saved = window.localStorage.getItem('theme');
+      var legacy = window.localStorage.getItem('orbit-theme');
+      if (legacy !== null) {
+        if (saved === null && (legacy === 'light' || legacy === 'dark')) {
+          saved = legacy;
+          window.localStorage.setItem('theme', legacy);
+        }
+        window.localStorage.removeItem('orbit-theme');
+      }
+    } catch (err) { saved = null; }
     var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     root.dataset.theme = saved === 'light' || saved === 'dark' ? saved : (prefersDark ? 'dark' : 'light');
   })();
@@ -85,9 +97,11 @@ nav { display: flex; gap: 1rem; font-size: .9rem; }
 .page h1 { font-size: var(--text-display); line-height: var(--leading-display); letter-spacing: -.03em; margin: .5rem 0 1rem; }
 .page h2 { font-size: clamp(1.8rem, 4vw, 3rem); margin: .6rem 0 1rem; line-height: 1.12; letter-spacing: -.02em; }
 .lede { font-size: 1.2rem; color: var(--muted); max-width: 700px; }
-.eyebrow, .section-label { letter-spacing: .06em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+/* Labels are plain and muted: no uppercase, no letter-spacing, no accent
+   color (agent-sdlc-site#17, rule 4). */
+.eyebrow, .section-label { color: var(--muted); font-weight: 600; }
 .section-label { margin: 0; }
-.pathbar { margin: 0 0 2.5rem; color: var(--accent); }
+.pathbar { margin: 0 0 2.5rem; color: var(--muted); }
 .meta { color: var(--muted); }
 
 /* ---- status pills ---- */
@@ -100,7 +114,7 @@ nav { display: flex; gap: 1rem; font-size: .9rem; }
    left border (agent-sdlc-site#17, Option A rule 3) ---- */
 .callout { padding: 1rem 1.2rem; border: 1px solid var(--accent); border-radius: var(--radius-md); background: var(--bg); color: var(--text); }
 .guide-note { border: 1px solid var(--accent); border-radius: var(--radius-md); background: var(--bg); color: var(--text); padding: 1rem 1.25rem; margin: 1.5rem 0; }
-.guide-note strong { color: var(--accent); }
+.guide-note strong { color: var(--text); }
 .guide-note p { margin: .4rem 0 0; }
 .guide-note p + p { margin-top: .75rem; }
 
@@ -116,7 +130,7 @@ nav { display: flex; gap: 1rem; font-size: .9rem; }
 /* ---- role grid / pull quotes — a left accent rule with no
    background tint; not the forbidden callout shape ---- */
 .role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.role-grid p, .contrast-row > *, .contrast p, .comparison p { border-left: 2px solid var(--accent); padding-left: 1rem; }
+.role-grid p, .contrast-row > *, .contrast p, .comparison p { border-top: 2px solid var(--accent); padding-top: .75rem; }
 
 /* ---- misc index / vocabulary lists ---- */
 .example-index { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; margin: 1.5rem 0; }
@@ -170,10 +184,10 @@ nav { display: flex; gap: 1rem; font-size: .9rem; }
 }
 .orbit-step, .stale-node { padding: 1rem; }
 .orbit-step { min-height: 8rem; }
-.orbit-step b, .stale-node b { display: block; color: var(--accent); font: .78rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .45rem; }
+.orbit-step b, .stale-node b { display: block; color: var(--muted); font: 600 .78rem var(--font-mono); margin-bottom: .45rem; }
 .orbit-step p, .stale-node span { margin: 0; color: var(--muted); font-size: .9rem; }
 .stale-warning { border-top: 2px solid var(--accent); }
-.stale-warning b { color: var(--accent); }
+.stale-warning b { color: var(--text); }
 .artefact-grid { grid-template-columns: 1fr 1fr; }
 .artefact-grid .code { min-height: 150px; }
 .boundary-code { white-space: pre; overflow: auto; border: 1px solid var(--rule); border-top: 2px solid var(--accent); font-size: .82rem; }
@@ -187,7 +201,7 @@ nav { display: flex; gap: 1rem; font-size: .9rem; }
 .contrast, .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .contrast-rows { margin-top: 1rem; }
 .contrast-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.contrast-row > * { padding: 0 0 1rem 1rem; margin: 0 0 1rem; }
+.contrast-row > * { padding: .75rem 0 1rem; margin: 0 0 1rem; }
 .contrast-row:first-child > * { padding-bottom: .5rem; }
 .rows p { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--rule); padding: .8rem 0; }
 .rows span { color: var(--muted); }
@@ -222,7 +236,7 @@ footer a { display: inline-block; }
 .resource-card { padding: 1.25rem; display: flex; flex-direction: column; min-height: 13rem; }
 .resource-card h3 { font-size: 1.5rem; margin: .4rem 0 .7rem; color: var(--text); }
 .resource-card p { margin: .35rem 0; color: var(--muted); }
-.resource-card .type-label { color: var(--accent); }
+.resource-card .type-label { color: var(--muted); }
 .resource-meta { color: var(--muted); font-size: .88rem; }
 .resource-actions { display: flex; gap: .8rem; flex-wrap: wrap; margin-top: auto; padding-top: 1rem; font: .78rem var(--font-mono); }
 .resource-actions a { text-decoration: none; }
@@ -258,7 +272,7 @@ footer a { display: inline-block; }
 /* ---- interoperability diagram ---- */
 .interop-diagram { display: flex; flex-direction: column; align-items: stretch; gap: .6rem; padding: 1.25rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-sm); }
 .interop-node { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; padding: .8rem 1rem; background: var(--bg); border: 1px solid var(--rule); border-top: 2px solid var(--accent); }
-.interop-node span { color: var(--accent); font: .68rem var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
+.interop-node span { color: var(--muted); font: .72rem var(--font-mono); }
 .interop-node strong { font-family: var(--font-display); font-size: 1.1rem; }
 .interop-arrow { color: var(--accent); font: 1.25rem var(--font-mono); text-align: center; animation: interop-pulse 1.8s ease-in-out infinite; }
 .interop-node:nth-of-type(3) { animation: interop-highlight 1.8s ease-in-out infinite; }
@@ -277,7 +291,7 @@ footer a { display: inline-block; }
 /* ---- orbit nav / home ---- */
 .orbit-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding-top: 1.15rem; }
 .orbit-nav div { display: flex; flex-wrap: wrap; gap: .35rem .8rem; align-items: baseline; }
-.orbit-nav span { width: 100%; font: .68rem var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.orbit-nav span { width: 100%; font: .72rem var(--font-mono); color: var(--muted); }
 .orbit-nav a { font-size: .85rem; }
 .orbit-nav > div { display: block; min-width: 0; }
 .orbit-nav > div > span { display: block; margin-bottom: .35rem; }
@@ -293,7 +307,7 @@ footer a { display: inline-block; }
 .orbit-site footer span:first-child { margin-right: auto; }
 .orbit-site footer a { font: .78rem var(--font-mono); }
 .orbit-home { padding: 3.4rem 0 5rem; }
-.orbit-home .orbit-kicker { display: flex; gap: .55rem; align-items: center; font: .72rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.orbit-home .orbit-kicker { display: flex; gap: .55rem; align-items: center; font: .78rem var(--font-mono); color: var(--muted); }
 .orbit-home h1 { max-width: 760px; margin: 1rem 0 1.2rem; font-size: clamp(3rem, 7vw, 5.8rem); }
 .orbit-home .lede { max-width: 680px; font-size: 1.35rem; }
 .orbit-home-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 3.5rem 0 2rem; }

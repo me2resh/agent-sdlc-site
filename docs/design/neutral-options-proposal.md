@@ -45,8 +45,11 @@ Each option gives one text face, one mono face, a neutral palette for
 light mode, a neutral palette for dark mode, and one accent color per
 standard. Each option also gives a mark idea for each standard.
 
-The visual comparison for these options is at:
-`/private/tmp/claude-501/-Users-ahmed-Projects-Apex-apexyard/d63746da-e97e-436f-bcd6-a888579359ad/scratchpad/neutral-options/index.html`
+The designer also made a visual comparison page for these options.
+That page is a single HTML file. It shows each option as a sample
+page, for each standard, in light mode and dark mode, with a
+light/dark toggle. The page was a review aid only. It is not in this
+repository.
 
 ## A note on the attribute name in the tokens below
 
@@ -512,10 +515,9 @@ document and both follow every rule in this revision.
 
 ## Files
 
-- Visual comparison (HTML, light/dark toggle):
-  `/private/tmp/claude-501/-Users-ahmed-Projects-Apex-apexyard/d63746da-e97e-436f-bcd6-a888579359ad/scratchpad/neutral-options/index.html`
-- This proposal:
-  `/private/tmp/claude-501/-Users-ahmed-Projects-Apex-apexyard/d63746da-e97e-436f-bcd6-a888579359ad/scratchpad/neutral-options/proposal.md`
+- Visual comparison: a single HTML page with a light/dark toggle. It
+  was a review aid only, and it is not in this repository.
+- This proposal: `docs/design/neutral-options-proposal.md`.
 
 No file in the `agent-sdlc-site` repository was changed to produce
 this proposal. The maintainer must approve one option before the

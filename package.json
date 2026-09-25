@@ -13,7 +13,7 @@
     "build:agentsdlc": "PUBLIC_SITE_KEY=agentsdlc npm --workspace apps/site run build",
     "build:orbit": "PUBLIC_SITE_KEY=orbit npm --workspace apps/site run build",
     "build:agdr": "PUBLIC_SITE_KEY=agdr npm --workspace apps/site run build",
-    "validate": "node scripts/validate-site.mjs && node scripts/validate-design-tokens.mjs && node scripts/validate-orbit-examples.mjs && node scripts/validate-content.mjs && node scripts/validate-interoperability.mjs",
+    "validate": "node scripts/validate-site.mjs && node scripts/validate-design-tokens.selftest.mjs && node scripts/validate-design-tokens.mjs && node scripts/validate-orbit-examples.mjs && node scripts/validate-content.mjs && node scripts/validate-interoperability.mjs",
     "build:all": "npm run build:agentsdlc && npm run build:orbit && npm run build:agdr && npm run validate"
   },
   "dependencies": {
