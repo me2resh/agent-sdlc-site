@@ -5,6 +5,9 @@ import OrbitSchemaIndex from '../components/OrbitSchemaIndex.astro';
 import OrbitConformancePage from '../components/OrbitConformancePage.astro';
 const siteKey = currentSite(import.meta.env.PUBLIC_SITE_KEY);
 type Page = { eyebrow: string; title: string; intro: string; sections: [string, string][] };
+// Call currentSite() again here instead of reusing siteKey: the Astro build drops the
+// module-scope siteKey binding when it is only read from inside this exported object
+// literal ("siteKey is not defined" at build time, confirmed by testing both forms).
 export const pages: Record<string, Page> = {
   governance: { eyebrow: 'Agent SDLC governance', title: 'Developed openly and versioned clearly.', intro: 'Agent SDLC specifications are developed through version-controlled specifications, schemas, issues, and pull requests.', sections: [['Propose a change','<a href="' + sites[currentSite(import.meta.env.PUBLIC_SITE_KEY)].sourceRepo + '/issues/new">Open an issue</a> with the problem, proposed behaviour, and affected specification.'],['Report ambiguity','Describe conflicting readings and link to the relevant normative section.'],['Publication','Changes are proposed publicly and published as versioned specification releases.']] },
   contribute: { eyebrow: 'Contribute', title: 'Improve the specifications with evidence.', intro: 'Contributions can improve wording, schemas, examples, implementations, and interoperability.', sections: [['Specification changes','<a href="' + sites[currentSite(import.meta.env.PUBLIC_SITE_KEY)].sourceRepo + '/issues/new">Propose a focused change</a> in the relevant repository.'],['Examples','Add examples that validate against the published schema.'],['Implementations','Register an implementation with a link and a clear support statement.']] },
