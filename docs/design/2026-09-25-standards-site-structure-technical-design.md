@@ -1,6 +1,6 @@
 # Technical Design: Versioned, Citable Standards Site Structure for ORBIT and AgDR
 
-**Status**: In Review (revision 2, after the Solution Architect review)
+**Status**: Approved (revision 2). The Solution Architect approved it in PR #34 at `91b4e87`. The maintainer merged PR #34 on 2026-09-25. The six non-blocking review items (N1 to N6) are listed in a comment on #18. The build PRs apply them.
 **Author**: Hisham (Tech Lead)
 **Date**: 2026-09-25
 **Ticket**: [#18](https://github.com/me2resh/agent-sdlc-site/issues/18)
@@ -29,7 +29,7 @@ This design gives orbitspec.dev and agdr.dev the same 9-section structure. Each 
 
 ### Non-Goals
 
-- The agentsdlc.ai umbrella site structure. This design changes only the ORBIT and AgDR builds. PR #28 (#25) decided the home of the interoperability profile.
+- The agentsdlc.ai umbrella site structure (its sections, pages, and menu). This design changes the agentsdlc.ai build in one way only: PR 1 (#31) stops building the ORBIT pages and the soft-404 files that the build copied from the other sites, and adds redirects for them (section 4.2). PR #28 (#25) decided the home of the interoperability profile.
 - Menu style and component. #26 changes the menu component. This design changes only the list of menu entries.
 - Favicon, OG images, and canonical tags (#15, PR #30). This design uses the URL form and the `seo.ts` module from PR #30.
 - Heading and accessibility fixes (#16).
@@ -363,7 +363,22 @@ ORBIT (orbitspec.dev):
 | `/schema/reconciliation.json`, `/schema/reconciliation.schema.json` | `/schema/reconciliation/v0.1.json` | 301 |
 | `/schema/execution-slice.json`, `/schema/execution-slice.schema.json` | `/schema/execution-slice/v0.1.json` | 301 |
 | `/schema/agdr.schema.json`, `/schema/agdr-json.schema.json`, `/agdr-spec.md` (soft-404 files today) | `https://agdr.dev/schema/agdr/v1.2.json`, `https://agdr.dev/schema/agdr-json/draft.json`, `https://agdr.dev/spec/1.2.0/spec.md` | 301 |
+| `/changelog.md` (soft-404 file today: the AgDR changelog endpoint served "Not found") | `/changelog`. PR 7 serves the vendored ORBIT `CHANGELOG.md` at `/changelog.md` and removes this entry. | 302 |
 | `/standards` (cross-site page, #31) | `https://agentsdlc.ai/standards` | 301 |
+
+agentsdlc.ai (added in PR 1, #31). Before PR 1, the agentsdlc.ai build served ORBIT pages with a canonical URL on orbitspec.dev (#15), and served the ORBIT and AgDR data files with the body "Not found":
+
+| Old URL | New URL | Code |
+|---------|---------|------|
+| `/concepts` | `https://orbitspec.dev/concepts` | 301 |
+| `/quick-start` | `https://orbitspec.dev/quick-start` | 301 |
+| `/specification` | `https://orbitspec.dev/specification` | 301 |
+| `/adopter-guide` | `https://orbitspec.dev/adopter-guide` | 301 |
+| `/changelog.md` (soft-404 file today) | `https://agdr.dev/changelog.md` | 301 |
+| `/schema/agdr.schema.json`, `/schema/agdr-json.schema.json`, `/agdr-spec.md` (soft-404 files today) | Same targets as the ORBIT rows above | 301 |
+| `/schema/orbit-plan.json`, `/schema/plan.schema.json`, and the other ORBIT schema paths (soft-404 files today) | The matching `https://orbitspec.dev/schema/<record>/v0.1.json` | 301 |
+
+The four ORBIT page targets are the current ORBIT URLs, because the real pages are there now. When PR 7 redirects `/specification` and PR 8 moves `/adopter-guide`, those PRs also change the matching agentsdlc.ai target to the new ORBIT URL, so that no chain forms. The redirect validator fails on such a chain (see the map rules below).
 
 AgDR (agdr.dev):
 
@@ -380,18 +395,18 @@ AgDR (agdr.dev):
 
 `/interoperability` on ORBIT and AgDR: PR #28 (#25) made it a short page that links to `https://agentsdlc.ai/interoperability`. The short page stays until the edge layer is live (PR 2b). Then the maintainer can replace it with a 301 to the agentsdlc.ai page (open question Q12).
 
-`/changelog.md` stays on both sites. On ORBIT, it becomes a real file when the ORBIT changelog is vendored.
+`/changelog.md` stays on both sites. On AgDR, it is the real vendored file. On ORBIT, PR 1 stops building the AgDR endpoint, and a 302 sends the URL to `/changelog` until PR 7 vendors the ORBIT changelog and serves the real file there.
 
-Map rules, checked in CI by a new `scripts/validate-redirects.mjs`:
+Map rules, checked in CI by a new `scripts/validate-redirects.mjs` (added in PR 1):
 
 - No key and no target has a trailing slash, except the root `/`.
 - A key is not also a real page in the same build.
 - An internal target is a real file in the same build.
 - An external target uses one of the three canonical hosts. No other host is allowed.
-- No chain and no loop. A target is never a key. The check counts the edge slash 301 as a hop: a target that ends with a slash (other than `/`) is a chain of two hops, and the check fails.
+- No chain and no loop. A target is never a key, on the same site or on the site of an external target. The check counts the edge slash 301 as a hop: a target that ends with a slash (other than `/`) is a chain of two hops, and the check fails.
 - Each URL in the URL inventory is a real page or a redirect key.
 
-The URL inventory (`config/url-inventory/<site>.txt`) is generated in PR 1 from two sources: the build of `main` at the commit that PR 1 merges onto (before PR 1 removes any file), and the live sitemaps. It includes non-HTML files, for example `/favicon.ico`, `/favicon.svg`, `/apple-touch-icon.png`, `/og-image.png`, `/robots.txt`, `/llms.txt`, all JSON files, and all Markdown files. PR 1 regenerates it if `main` moves before the merge.
+The URL inventory (`config/url-inventory/<site>.txt`) is generated in PR 1 from two sources: the build of `main` at the commit that PR 1 merges onto (before PR 1 removes any file), and the live sitemaps. It includes non-HTML files, for example `/favicon.ico`, `/favicon.svg`, `/apple-touch-icon.png`, `/og-image.png`, `/robots.txt`, `/llms.txt`, all JSON files, and all Markdown files. Hashed build assets under `/_astro/` change with each build, so the inventory does not list them. `scripts/generate-url-inventory.mjs` (`npm run inventory:urls`) generates it. The script adds URLs and never removes a URL. PR 1 regenerates it if `main` moves before the merge.
 
 ### 4.3 How redirects are served on S3 + CloudFront
 
@@ -505,8 +520,8 @@ Each PR is one ticket. Each PR keeps every current URL working, except the soft-
 
 | PR | Ticket | Title | Changes | Depends on | Size |
 |----|--------|-------|---------|------------|------|
-| 1 | #31 | Route registry | Add `routes.ts`. Nav, footer, and `seo.ts` read it (one sitemap route list). Build each page only for its owning site. Remove `canonicalOwner` entries for pages that are no longer built. Add `validate-routes.mjs`. Generate the URL inventory. Add `config/redirects.ts` with the entries for the removed cross-site and soft-404 URLs, and write `_redirects.json`. | PR #30 merged | ~300 lines |
-| 2a | #18 | Redirect validator and HTML stubs | Add `validate-redirects.mjs` and the HTML stubs. Change the PR #30 sitemap check to skip `noindex` stubs. | PR 1 | ~200 lines |
+| 1 | #31 | Route registry | Add `routes.ts`. Nav, footer, and `seo.ts` read it (one sitemap route list). Build each page only for its owning site. Remove `canonicalOwner` entries for pages that are no longer built. Add `validate-routes.mjs`. Generate the URL inventory. Add `config/redirects.ts` with the entries for the removed cross-site and soft-404 URLs, write `_redirects.json`, and add `validate-redirects.mjs` (moved from PR 2a, so that the map and the inventory are checked from the first deploy). | PR #30 merged | ~300 lines |
+| 2a | #18 | HTML stubs | Add the HTML stubs, and extend `validate-redirects.mjs` to check them. Change the PR #30 sitemap check to skip `noindex` stubs. | PR 1 | ~150 lines |
 | 2b | #18 | Edge redirects | Write `_redirects.json` into the KeyValueStore in the staging `workflow_run` deploy and in the production deploy on `main`. Staging smoke test with curl. Remove the JSON legacy copies. | PR 2a, D1, I1, PR #33 | ~120 lines |
 | 3 | #18 | Multi-version spec sources | Replace `agdr-spec-source.mjs` with `spec-sources.mjs`. Move AgDR files to `versions/draft/`. Add `versions/1.2.0/` from `e4e1a4e` (or tag `v1.2.0`). Extend the hash check, the sync script, and the drift workflow. Add the tag check on `pull_request`. Keep #22's version check working. No page change. | PR 1, PR #33 | ~300 lines |
 | 4 | #18 | AgDR versioned spec pages | Content collection, remark link rewrite, `SpecStatus.astro`, normative labels, BCP 14 marking, spec lint. Pages `/spec`, `/spec/1.2.0`, `/spec/draft`, raw `.md`. Section 9 as 2.4 states. Redirects for `/agdr-spec.md` and `/spec/latest`. The `/specification` redirect only after Q2. | PR 2a, PR 3, Q2 for the redirect | ~400 lines |
@@ -530,7 +545,7 @@ Soft-404 URLs in PR 1: PR 1 removes the cross-site files and adds their redirect
 | #16 (headings, skip link) | PR 8 moves `OrbitResourcePage` to a new URL. | PR 8 keeps the #16 changes. It moves the page and does not rewrite it. |
 | #22 (AgDR version module) | PR 3 and PR 4 read the version from the manifest. | PR 3 keeps `agdr-changelog.ts` as the reader of the vendored CHANGELOG. The manifest adds data. The #22 checks stay in `npm run validate`. |
 | #25, PR #28 (interoperability) | PR #28 keeps the full profile on agentsdlc.ai and shows a short page on ORBIT and AgDR. | The route registry lists the short page for ORBIT and AgDR. A change to a 301 waits for PR 2b and Q12. |
-| #26 (ORBIT menu) | PR 6 and PR 8 change the menu entries. | They change only the entry list in the route registry, not the component. |
+| #26 (ORBIT menu) | PR 6 and PR 8 change the menu entries. #26 changes the menu component in `StandardLayout.astro` in parallel with PR 1. | They change only the entry list in the route registry, not the component. PR 1 adds the registry but does not edit `StandardLayout.astro`, so that it does not conflict with #26. The #26 PR (or the first PR after it) makes the menu and the footer read the registry. PR 1 removes no page that the menu or the footer links to, and the PR 1 link check proves it. |
 
 ---
 
@@ -618,12 +633,12 @@ The repository keeps decision notes in `docs/design/`. These decisions are mater
 | Type | What | Where |
 |------|------|-------|
 | Build checks | Route registry equals the dist files. No cross-site files. `seo.ts` reads the registry. | `validate-routes.mjs` (PR 1) |
-| Build checks | Redirect map: no slash in keys or targets, targets exist, no chains (the slash 301 counts as a hop), no loops, allowed hosts, URL inventory covered. | `validate-redirects.mjs` (PR 2a) |
+| Build checks | Redirect map: no slash in keys or targets, targets exist, no chains (the slash 301 counts as a hop), no loops, allowed hosts, URL inventory covered. | `validate-redirects.mjs` (PR 1, extended for stubs in PR 2a) |
 | Build checks | PR #30 sitemap check passes with the `noindex` stubs skipped. | `validate-sitemaps.mjs` (PR 2a) |
 | Build checks | Hash check, version check, `$id` path check, status block on each spec page, BCP 14 lint, unsafe HTML check, design-token check. | `npm run check` and `npm run validate` (PR 3, 4, 5) |
 | Network checks | Tag check on `pull_request` when the manifest changes. Weekly drift and new-release check. | GitHub Actions (PR 3) |
 | Fixture checks | Vendored examples and fixtures validate against vendored schemas. | Extends `validate-orbit-examples.mjs` (PR 6, 7) |
-| Link check | All internal links in `dist/` resolve to a file or a redirect key. | Extends `validate-site.mjs` (PR 1) |
+| Link check | All internal links in `dist/` resolve to a file or a redirect key. | `validate-routes.mjs` (PR 1) |
 | Staging smoke | For each redirect: `curl -sI` returns the expected code, `Location`, and `Cache-Control`. `/old/` with a slash returns one redirect to the final target. For each `$id`: `curl -s` returns the schema. | Staging deploy (PR 2b) |
 | Staging smoke | `/spec/1.2.0` returns 200. `/spec/1.2.0/` returns 301 to `/spec/1.2.0`. `/spec/1.2.0/spec.md` returns the raw file. | Staging deploy (PR 4) |
 | Manual | Status block, labels, callout, and menu at 1440 px and 390 px, light and dark mode. | Each UI PR, with UI Designer review |
@@ -639,14 +654,15 @@ The repository keeps decision notes in `docs/design/`. These decisions are mater
 - [ ] Each site build contains only the pages that the registry assigns to that site. The ORBIT build emits no AgDR file, and the AgDR build emits no ORBIT file.
 - [ ] `canonicalOwner` has no entry for a page that is no longer built.
 - [ ] `config/url-inventory/<site>.txt` lists every URL, HTML and non-HTML, from the build of the base commit and the live sitemaps.
-- [ ] `config/redirects.ts` has an entry for each removed cross-site or soft-404 URL. No key or target has a trailing slash.
+- [ ] `config/redirects.ts` has an entry for each removed cross-site or soft-404 URL, on all three sites (section 4.2). No key or target has a trailing slash.
 - [ ] `validate-routes.mjs` runs in `npm run validate` and fails when a built file is not in the registry.
+- [ ] `validate-redirects.mjs` runs in `npm run validate` and fails on a trailing slash in a key or target, a missing internal target, a chain (the slash 301 counts as a hop), a loop, a foreign host, a key that is also a page, or an inventory URL with no page and no redirect.
 - [ ] The PR #30 checks still pass. All pages in the registry render as before.
 
 ### PR 2a: Redirect validator and HTML stubs
 
-- [ ] The build writes `dist/<site>/_redirects.json` and an HTML stub at each old HTML path, with canonical link and `noindex`.
-- [ ] `validate-redirects.mjs` fails on a trailing slash in a key or target, a missing target, a chain (the slash 301 counts as a hop), a loop, a foreign host, a key that is also a page, or an inventory URL with no page and no redirect.
+- [ ] The build writes an HTML stub at each old HTML path, with canonical link and `noindex`. (PR 1 already writes `dist/<site>/_redirects.json`.)
+- [ ] `validate-redirects.mjs` (from PR 1) also fails when an old HTML path in the map has no stub, or a stub names a different target.
 - [ ] The PR #30 sitemap check skips pages with `noindex` and a meta refresh, and still fails for any other page that is not in the sitemap.
 - [ ] PR 1 and PR 2a deploy in the same release window.
 
@@ -749,6 +765,6 @@ The Mermaid diagram in "Build and URL flow" was rendered to SVG with `npx -y @me
 | Role | Name | Date | Status |
 |------|------|------|--------|
 | Tech Lead | Hisham | 2026-09-25 | Author |
-| Solution Architect | Tariq | 2026-09-25 | Changes requested on revision 1. Revision 2 addresses B1, B2, and the 8 non-blocking items. |
-| Maintainer | me2resh | | Pending |
+| Solution Architect | Tariq | 2026-09-25 | Approved revision 2 in PR #34 at `91b4e87`, with six non-blocking items (N1 to N6, listed on #18). Revision 1 had changes requested (B1, B2). |
+| Maintainer | me2resh | 2026-09-25 | Approved: merged PR #34. |
 | Platform (edge redirects, D1, I1) | Adel | | Pending |
