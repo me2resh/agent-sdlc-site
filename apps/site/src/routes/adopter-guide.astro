@@ -1,9 +1,8 @@
 ---
 import Layout from '../layouts/StandardLayout.astro';
-import { currentSite } from '../lib/site';
-const key = currentSite(import.meta.env.PUBLIC_SITE_KEY);
+// ORBIT only. The route registry (src/lib/routes.ts) injects this page for orbitspec.dev (#31).
 ---
-{key === 'orbit' ? <Layout title="Adopter guide"><section class="page wide"><p class="pathbar">~/orbit/adopter-guide</p><p class="eyebrow">ORBIT v0.1 · ADOPTER GUIDE</p><h1>Adopt one planning loop.</h1><p class="lede">Start with one meaningful outcome. Keep intent durable, observe the project, reconcile the evidence, and hand an executor one bounded change.</p><div class="actions"><a class="button" href="#quick-start">Quick start</a><a class="button quiet" href="/schemas">View schemas</a><a class="text-link" href="/specification">Read the normative specification →</a></div>
+<Layout title="Adopter guide"><section class="page wide"><p class="pathbar">~/orbit/adopter-guide</p><p class="eyebrow">ORBIT v0.1 · ADOPTER GUIDE</p><h1>Adopt one planning loop.</h1><p class="lede">Start with one meaningful outcome. Keep intent durable, observe the project, reconcile the evidence, and hand an executor one bounded change.</p><div class="actions"><a class="button" href="#quick-start">Quick start</a><a class="button quiet" href="/schemas">View schemas</a><a class="text-link" href="/specification">Read the normative specification →</a></div>
 
 <section class="editorial" id="quick-start"><p class="section-label">QUICK START · 15 MINUTES</p><h2>Move one outcome through the loop.</h2><ol class="adoption-steps"><li><b>Choose an outcome.</b><span>State the durable result in plain language.</span></li><li><b>Create a Plan.</b><span>Add stable outcome and acceptance-criterion IDs.</span></li><li><b>Capture a Project Snapshot.</b><span>Record only the repository facts relevant to that Plan.</span></li><li><b>Reconcile.</b><span>Assess each criterion with evidence, including unknowns and changes.</span></li><li><b>Create one Execution Slice.</b><span>Define the smallest justified change with explicit exclusions.</span></li><li><b>Execute and observe again.</b><span>Use the executor you already have, then capture the resulting state.</span></li></ol></section>
 
@@ -14,4 +13,4 @@ const key = currentSite(import.meta.env.PUBLIC_SITE_KEY);
 <section class="split" id="first-policy"><div><p class="section-label">RECOMMENDED FIRST POLICY</p><h2>Require human approval for the first slice.</h2><p>Human approval is a practical adoption choice. It is outside the ORBIT core and can change as confidence grows.</p></div><div class="guide-note"><strong>Keep the boundary clear.</strong><p>Plans and Outcomes are durable. Slices, tickets, and jobs are derived work.</p></div></section>
 
 <section class="editorial" id="next"><p class="section-label">NEXT</p><h2>Ready to try it?</h2><p>Open the schemas, create one Plan, and complete one observe → reconcile → slice cycle.</p><div class="actions"><a class="button" href="/schemas">Browse schemas →</a><a class="text-link" href="/examples/plan/customer-sso">Open a complete example →</a></div></section>
-</section></Layout> : <Layout title="Adopter guide"><section class="page"><p class="eyebrow">Not an ORBIT page</p><h1>Choose the ORBIT site.</h1><p class="lede">This guide is available at <a href="https://orbitspec.dev/adopter-guide">orbitspec.dev/adopter-guide</a>.</p></section></Layout>}
+</section></Layout>
