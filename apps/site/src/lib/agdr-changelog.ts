@@ -45,13 +45,16 @@ export function parseAgdrChangelog(markdown: string): AgdrChangelogEntry[] {
     const match = RELEASE_HEADING.exec(heading);
     if (!match || !match.groups) {
       throw new Error(
-        `apps/site/src/data/agdr/CHANGELOG.md has a "## [...]" heading this parser cannot read: "## ${heading}". ` +
+        `apps/site/src/data/agdr/CHANGELOG.md has a "## ..." heading this parser does not recognize: "## ${heading}". ` +
           'Fix the heading in CHANGELOG.md, or extend RELEASE_HEADING in apps/site/src/lib/agdr-changelog.ts to accept the new form. ' +
           'Failing loudly here is deliberate -- see GH-11 / GH-19 (B1): a silently dropped heading must not ship a wrong version to production.'
       );
     }
     const { version, date, tag } = match.groups;
-    entries.push({ version, date, prerelease: version.includes('-'), yanked: tag === 'YANKED' });
+    // The RELEASE_HEADING regex has the /i flag, so tag can be "YANKED",
+    // "Yanked", or "yanked" -- compare case-insensitively, not by exact
+    // string, or a lowercase tag silently becomes "current". See GH-19 (B3).
+    entries.push({ version, date, prerelease: version.includes('-'), yanked: tag?.toUpperCase() === 'YANKED' });
   }
   if (entries.length === 0) {
     throw new Error(

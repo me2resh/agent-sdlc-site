@@ -60,7 +60,10 @@ function findCurrentVersionInSource(markdown) {
       throw new Error(`Cannot read changelog heading "## ${heading}" in ${changelogSource}.`);
     }
     const { version, tag } = match.groups;
-    if (version.includes('-') || tag === 'YANKED') continue; // pre-release / yanked is never current
+    // RELEASE_HEADING has the /i flag, so tag can be lowercase ("yanked") --
+    // compare case-insensitively, or a lowercase tag is missed here too.
+    // See GH-19 (B3).
+    if (version.includes('-') || tag?.toUpperCase() === 'YANKED') continue; // pre-release / yanked is never current
     return version;
   }
   return null;
