@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/StandardLayout.astro';
 import { currentSite, sites } from '../lib/site';
+import { routesFrom } from '../lib/routes';
 import { agdrChangelogEntries, agdrCurrentVersion, agdrVersionBanner } from '../lib/agdr-changelog';
 import OrbitSchemaIndex from '../components/OrbitSchemaIndex.astro';
 import OrbitConformancePage from '../components/OrbitConformancePage.astro';
@@ -23,13 +24,13 @@ export const pages: Record<string, Page> = {
   integrations: { eyebrow: 'AgDR integrations', title: 'Use AgDR without a required storage system.', intro: 'Consumers can read valid records without adopting a vendor-specific workflow.', sections: [['Storage','Store records with the repository or document system that fits the project.'],['Interoperability','Optional typed relationships can connect a decision to another artefact.']] },
   'related-standards': { eyebrow: 'Related standards', title: 'Independent standards can describe different layers.', intro: 'AgDR records one consequential agent decision. A related standard describes multi-agent deliberation and adjudication.', sections: [['External deliberation standards','Independent multi-agent standards can use their own governance and type names.'],['Interoperability','External standards may participate through the optional relationship profile.']] }
 };
+// The route registry (src/lib/routes.ts) lists the slugs that each site builds (#31).
 export function getStaticPaths(){
-  const routesBySite: Record<string, string[]> = {
-    agentsdlc: ['governance', 'contribute', 'implementations'],
-    orbit: ['schemas', 'reconciliation', 'execution-slices', 'examples', 'conformance', 'changelog', 'contribute'],
-    agdr: ['schema', 'examples', 'integrations', 'conformance', 'related-standards', 'changelog']
-  };
-  return (routesBySite[currentSite(import.meta.env.PUBLIC_SITE_KEY)] ?? []).map(slug => ({ params: { slug }, props: { page: pages[slug] } }));
+  return routesFrom(currentSite(import.meta.env.PUBLIC_SITE_KEY), 'pages/[slug].astro').map(route => {
+    const slug = route.path.slice(1);
+    if (!pages[slug]) throw new Error(`The route registry lists ${route.path}, but [slug].astro has no page for it`);
+    return { params: { slug }, props: { page: pages[slug] } };
+  });
 }
 const { page } = Astro.props;
 ---

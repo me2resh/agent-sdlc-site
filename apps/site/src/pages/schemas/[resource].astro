@@ -1,11 +1,13 @@
 ---
 import OrbitResourcePage from '../../components/OrbitResourcePage.astro';
 import { currentSite } from '../../lib/site';
+import { hasRoute } from '../../lib/routes';
 import { resources, resourceByKey } from '../../data/orbit/resources';
 
+// The route registry (src/lib/routes.ts) decides which sites build these pages (#31).
 export function getStaticPaths() {
-  if (currentSite(import.meta.env.PUBLIC_SITE_KEY) !== 'orbit') return [];
-  return resources.map(resource => ({ params: { resource: resource.key }, props: { resource } }));
+  const site = currentSite(import.meta.env.PUBLIC_SITE_KEY);
+  return resources.filter(resource => hasRoute(site, `/schemas/${resource.key}`)).map(resource => ({ params: { resource: resource.key }, props: { resource } }));
 }
 
 const resource = Astro.props.resource ?? resourceByKey(Astro.params.resource ?? '');
