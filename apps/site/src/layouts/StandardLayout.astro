@@ -1,9 +1,10 @@
 ---
 import { currentSite, sites } from '../lib/site';
+import { agdrVersionBanner } from '../lib/agdr-changelog';
 import '@agent-sdlc/design-system/tokens.css';
 const key = currentSite(import.meta.env.PUBLIC_SITE_KEY);
 const site = sites[key];
-const version = key === 'agdr' ? 'AgDR 1.2.0 · Published' : key === 'orbit' ? 'ORBIT v0.1 · Draft' : 'Agent SDLC · Early ecosystem';
+const version = key === 'agdr' ? agdrVersionBanner : key === 'orbit' ? 'ORBIT v0.1 · Draft' : 'Agent SDLC · Early ecosystem';
 const title = Astro.props.title ? `${Astro.props.title} — ${site.name}` : `${site.name} — ${site.kicker}`;
 const footerLabel = key === 'agentsdlc' ? 'Agent SDLC' : `${site.name} · Agent SDLC`;
 const footerContributeHref = key === 'orbit' || key === 'agentsdlc' ? '/contribute' : null;
