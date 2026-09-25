@@ -15,6 +15,8 @@
 //   - No chain and no loop: a target is never a key, on the same site or on
 //     the site of an external target.
 //   - Each URL in config/url-inventory/<site>.txt is a file or a key.
+//   - Each HTML key has exactly one stub page in the build, and the stub
+//     names the target of its entry. No stub exists without an HTML key.
 //
 // Status codes:
 //   - 301 when the old URL named one fixed thing, and the new URL names the
@@ -115,6 +117,58 @@ export const pendingTargets: Readonly<Record<string, string>> = {
   [`${ORBIT}/schema/reconciliation/v0.1.json`]: 'PR 7',
   [`${ORBIT}/schema/execution-slice/v0.1.json`]: 'PR 7'
 };
+
+/**
+ * File extensions that the edge function serves as files (design #18 section
+ * 4.3, step 5). A path whose last segment ends with one of these is a file.
+ * Any other path maps to <path>/index.html. This is the one copy of the list
+ * in this repository. scripts/validate-routes.mjs fails when a build contains
+ * a file with another extension, because the edge cannot serve it.
+ */
+export const edgeFileExtensions: readonly string[] = ['.json', '.md', '.xml', '.txt', '.html', '.png', '.ico', '.svg', '.jpg', '.webp', '.css', '.js', '.woff2', '.webmanifest'];
+
+/** True when the edge serves the path as a file, not as <path>/index.html. */
+export function isFilePath(path: string): boolean {
+  const last = path.slice(path.lastIndexOf('/') + 1);
+  return edgeFileExtensions.some(extension => last.endsWith(extension));
+}
+
+/**
+ * The entries whose old path is an HTML page. The build writes an HTML stub
+ * at each of these paths (design #18 section 4.3, file layer). A file path
+ * (JSON, Markdown) gets no stub, because a file cannot hold a meta refresh.
+ */
+export function htmlRedirects(site: StandardKey): readonly Redirect[] {
+  return redirects[site].filter(entry => !isFilePath(entry.from));
+}
+
+/** Escapes a value for an HTML attribute or text node. */
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/**
+ * The HTML stub for an old page (design #18 section 4.3, file layer). The
+ * target is an absolute URL from this map. The stub is not in the sitemap.
+ */
+export function redirectStubHtml(target: string): string {
+  const url = escapeHtml(target);
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>This page has moved</title>
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url=${url}">
+<link rel="canonical" href="${url}">
+</head>
+<body>
+<p>This page has moved to <a href="${url}">${url}</a>.</p>
+</body>
+</html>
+`;
+}
 
 /** The site-prefixed key of an entry in the edge KeyValueStore (design #18 section 4.3). */
 export function redirectKey(site: StandardKey, path: string): string {

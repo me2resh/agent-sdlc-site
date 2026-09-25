@@ -1,8 +1,8 @@
 import { defineConfig } from 'astro/config';
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { standards } from '../../config/standards.ts';
-import { redirectsDocument } from '../../config/redirects.ts';
+import { htmlRedirects, redirectStubHtml, redirectsDocument } from '../../config/redirects.ts';
 import { routes } from './src/lib/routes.ts';
 
 const siteKey = process.env.PUBLIC_SITE_KEY || 'agentsdlc';
@@ -14,7 +14,9 @@ const key = siteKey === 'orbit' || siteKey === 'agdr' ? siteKey : 'agentsdlc';
  * A page under src/routes/ is not a file-system route. This integration
  * injects it only when the route registry (src/lib/routes.ts) assigns it to
  * the site of this build. After the build, it writes the redirect map of
- * the site to dist/<site>/_redirects.json.
+ * the site to dist/<site>/_redirects.json, and an HTML stub at each old
+ * page path of the map (design #18 section 4.3, file layer). A stub never
+ * replaces a built page.
  * @returns {import('astro').AstroIntegration}
  */
 function siteRoutes() {
@@ -29,6 +31,13 @@ function siteRoutes() {
       },
       'astro:build:done': ({ dir }) => {
         writeFileSync(new URL('_redirects.json', dir), `${JSON.stringify(redirectsDocument(key), null, 2)}\n`);
+        for (const { from, to } of htmlRedirects(key)) {
+          const stubDir = new URL(`.${from}/`, dir);
+          mkdirSync(stubDir, { recursive: true });
+          // The target comes only from config/redirects.ts. An internal
+          // target gets the canonical origin of this site.
+          writeFileSync(new URL('index.html', stubDir), redirectStubHtml(new URL(to, standards[key].canonicalUrl).href), { flag: 'wx' });
+        }
       }
     }
   };

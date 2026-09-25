@@ -12,7 +12,13 @@
 //   - og:url differs from the canonical URL,
 //   - a page has no favicon links, no og:image, or no Twitter Card tags, or
 //     a file they name is missing from the build,
-//   - robots.txt names a different sitemap.
+//   - robots.txt names a different sitemap,
+//   - a redirect stub is in a sitemap.
+//
+// A redirect stub (design #18 section 4.3) is a page with both
+// <meta name="robots" content="noindex"> and a meta refresh. The page checks
+// skip stubs, and scripts/validate-redirects.mjs checks them. A page with
+// only one of the two markers is a normal page, so it is still checked.
 //
 // Run by scripts/validate-site.mjs after `npm run build:all`.
 
@@ -85,6 +91,7 @@ for (const key of SITES) {
 }
 
 let pageCount = 0;
+let stubCount = 0;
 for (const key of SITES) {
   const origin = origins[key];
   const siteDir = join(dist, key);
@@ -110,11 +117,17 @@ for (const key of SITES) {
 
   // 2. Every built page has correct head metadata, and is in a sitemap.
   for (const file of htmlFiles(siteDir)) {
-    pageCount++;
     const rel = relative(siteDir, file).split(sep).join('/');
     const path = rel === 'index.html' ? '/' : `/${rel.replace(/\/index\.html$/, '')}`;
     const where = `${key}${path}`;
     const html = readFileSync(file, 'utf8');
+
+    if (/<meta name="robots" content="noindex">/.test(html) && /<meta http-equiv="refresh"/.test(html)) {
+      stubCount++;
+      if (sitemaps[key].has(`${origin}${path}`)) problems.push(`${where}: redirect stub is in ${key}/sitemap.xml`);
+      continue;
+    }
+    pageCount++;
 
     const canonicals = all(html, /<link rel="canonical" href="([^"]*)"/g);
     if (canonicals.length !== 1) {
@@ -164,5 +177,5 @@ if (problems.length > 0) {
 }
 const urlCount = SITES.reduce((sum, key) => sum + sitemaps[key].size, 0);
 console.log(
-  `sitemap validation passed: ${pageCount} built pages and ${urlCount} sitemap URLs agree on 3 sites; canonical URLs use the registry domains and no trailing slash; favicon, og:image, and Twitter Card tags are present`
+  `sitemap validation passed: ${pageCount} built pages and ${urlCount} sitemap URLs agree on 3 sites; ${stubCount} redirect stubs are skipped and not in a sitemap; canonical URLs use the registry domains and no trailing slash; favicon, og:image, and Twitter Card tags are present`
 );

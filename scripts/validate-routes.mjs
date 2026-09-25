@@ -3,7 +3,12 @@
 //
 // It fails when:
 //   - a site build contains a file that the registry does not assign to
-//     that site (for example an ORBIT page in the AgDR build),
+//     that site (for example an ORBIT page in the AgDR build). The HTML
+//     redirect stubs are the one exception: a stub at an HTML key of the
+//     redirect map is allowed. scripts/validate-redirects.mjs checks them,
+//   - a site build contains a file whose extension the edge function does
+//     not serve as a file (edgeFileExtensions in config/redirects.ts), so
+//     the edge would map its URL to <path>/index.html,
 //   - the registry assigns a page or file to a site, and the build of that
 //     site does not contain it,
 //   - a registry path is not in the one URL form, or is listed twice,
@@ -20,7 +25,7 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { builtUrls } from './generate-url-inventory.mjs';
 import { routes } from '../apps/site/src/lib/routes.ts';
-import { redirects } from '../config/redirects.ts';
+import { edgeFileExtensions, htmlRedirects, isFilePath, redirects } from '../config/redirects.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const siteRoot = join(root, 'apps/site');
@@ -84,12 +89,27 @@ for (const site of SITES) {
   }
   built[site] = new Set(builtUrls(siteDir));
   const registered = new Map((routes[site] ?? []).map(route => [route.path, route]));
+  const stubs = new Set(htmlRedirects(site).map(entry => entry.from));
   for (const url of built[site]) {
-    if (!registered.has(url)) problems.push(`${site}${url}: the build contains this file, but the route registry does not assign it to ${site}`);
+    if (!registered.has(url) && !stubs.has(url)) problems.push(`${site}${url}: the build contains this file, but the route registry does not assign it to ${site}`);
   }
   for (const [path, route] of registered) {
     const file = route.kind === 'page' ? (path === '/' ? join(siteDir, 'index.html') : join(siteDir, path.slice(1), 'index.html')) : join(siteDir, path.slice(1));
     if (!existsSync(file)) problems.push(`${site}${path}: the route registry assigns this ${route.kind} to ${site}, but the build does not contain ${relative(siteDir, file)}`);
+  }
+}
+
+// 2b. The edge serves each built file (design #18 section 4.3, step 5). A
+//     page is <path>/index.html. Any other file needs a listed extension.
+//     Hashed assets under /_astro/ are checked too.
+let fileCount = 0;
+for (const site of SITES) {
+  if (!built[site]) continue;
+  const siteDir = join(dist, site);
+  for (const file of filesUnder(siteDir)) {
+    fileCount++;
+    const path = `/${relative(siteDir, file).split(sep).join('/')}`;
+    if (!isFilePath(path)) problems.push(`${site}${path}: the edge function does not serve this extension as a file. Allowed: ${edgeFileExtensions.join(' ')}`);
   }
 }
 
@@ -117,4 +137,4 @@ if (problems.length > 0) {
   throw new Error(`route validation failed: ${problems.length} problem(s)`);
 }
 const counts = SITES.map(site => `${site} ${built[site].size}`).join(', ');
-console.log(`route validation passed: each build equals its route registry list (${counts} files); ${linkCount} internal links resolve`);
+console.log(`route validation passed: each build equals its route registry list (${counts} files); ${linkCount} internal links resolve; ${fileCount} built files use an edge file extension`);
