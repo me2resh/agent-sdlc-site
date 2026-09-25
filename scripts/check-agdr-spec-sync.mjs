@@ -1,36 +1,34 @@
 #!/usr/bin/env node
-// Fails when this site's vendored AgDR spec files differ from the pinned
-// ref of me2resh/agent-decision-record recorded in agdr-spec-source.mjs.
-// This is the CI backstop for GH-12: it catches the site's copy going
-// stale relative to the source repository again.
-import { readFileSync } from 'node:fs';
+// Offline check (GH-12): fails when a vendored AgDR spec file differs from
+// the SHA-256 recorded for the pinned commit in agdr-spec-source.mjs.
+// This check never uses the network, so `npm run check` and production
+// deploys do not depend on GitHub availability.
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { AGDR_SPEC_SOURCE, rawUrl } from './agdr-spec-source.mjs';
+import { fileURLToPath } from 'node:url';
+import { AGDR_SPEC_SOURCE } from './agdr-spec-source.mjs';
 
-const root = new URL('..', import.meta.url).pathname;
+const root = fileURLToPath(new URL('..', import.meta.url));
+const problems = [];
 
-async function fetchText(path) {
-  const url = rawUrl(path);
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Fetch failed (${res.status}): ${url}`);
-  return res.text();
-}
-
-let failed = false;
-for (const { source, dest } of AGDR_SPEC_SOURCE.files) {
-  const upstream = await fetchText(source);
-  const local = readFileSync(join(root, dest), 'utf8');
-  if (upstream !== local) {
-    failed = true;
-    console.error(`OUT OF SYNC: ${dest}`);
-    console.error(`  differs from ${AGDR_SPEC_SOURCE.repo}@${AGDR_SPEC_SOURCE.ref}/${source}`);
+for (const { source, dest, sha256 } of AGDR_SPEC_SOURCE.files) {
+  const file = join(root, dest);
+  if (!existsSync(file)) {
+    problems.push(`MISSING: ${dest}`);
+    continue;
+  }
+  const actual = createHash('sha256').update(readFileSync(file)).digest('hex');
+  if (actual !== sha256) {
+    problems.push(`OUT OF SYNC: ${dest}\n  expected sha256 ${sha256} (${source} at ${AGDR_SPEC_SOURCE.ref})\n  actual   sha256 ${actual}`);
   }
 }
 
-if (failed) {
-  console.error('\nagdr spec sync check failed.');
-  console.error('Run: node scripts/sync-agdr-spec.mjs');
-  console.error('See scripts/agdr-spec-source.mjs for the pinned ref.');
+if (problems.length > 0) {
+  console.error(problems.join('\n'));
+  console.error('\nagdr spec sync check failed. Do not edit vendored files by hand.');
+  console.error('Run `npm run sync:agdr-spec` to restore them from the pinned commit.');
+  console.error('See scripts/agdr-spec-source.mjs.');
   process.exit(1);
 }
-console.log(`agdr spec sync check passed: vendored copy matches ${AGDR_SPEC_SOURCE.repo}@${AGDR_SPEC_SOURCE.ref}`);
+console.log(`agdr spec sync check passed (offline): ${AGDR_SPEC_SOURCE.files.length} vendored files match ${AGDR_SPEC_SOURCE.repo}@${AGDR_SPEC_SOURCE.ref.slice(0, 12)}`);
