@@ -140,8 +140,16 @@ nav { display: flex; gap: 1rem; font-size: .9rem; }
 .vocabulary code { border: 1px solid var(--rule); padding: .45rem .7rem; background: var(--surface); color: var(--text); }
 
 /* ---- buttons / links ---- */
-.actions { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin: 2rem 0 3rem; }
-.button { display: inline-block; background: var(--accent); color: var(--bg); padding: .65rem 1rem; border-radius: var(--radius-sm); text-decoration: none; font-weight: 650; }
+/* Button groups. Every group of buttons on the three sites uses one of
+   these containers, so buttons never touch and they wrap cleanly on a
+   narrow screen. */
+.actions, .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); }
+.actions { margin: 2rem 0 3rem; }
+.button-row { margin: var(--space-lg) 0 0; }
+/* The filled button has a 1px border in its own fill color, so a filled
+   button and a quiet (outlined) button next to it are the same height. */
+.button { display: inline-block; background: var(--accent); color: var(--bg); border: 1px solid var(--accent); padding: .65rem 1rem; border-radius: var(--radius-sm); text-decoration: none; font-weight: 650; }
+button.button { font: inherit; font-weight: 650; cursor: pointer; }
 .button.quiet { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
 .text-link { align-self: center; font: .78rem var(--font-mono); text-decoration: none; }
 
@@ -246,7 +254,7 @@ footer a { display: inline-block; }
 .field-table td:first-child { white-space: nowrap; }
 .invariant-list { padding-left: 1.25rem; }
 .invariant-list li { padding: .45rem 0; }
-.copy-json { border: 0; font: inherit; cursor: pointer; }
+.copy-json { font: inherit; font-weight: 650; cursor: pointer; }
 .example-actions { align-items: center; }
 .related-links { margin-top: 0; }
 .resource-grid + .resource-grid { margin-top: 1rem; }
