@@ -1,11 +1,13 @@
 import type { APIRoute } from 'astro';
-import { currentSite, sites } from '../lib/site';
+import { currentSite } from '../lib/site';
+import { canonicalUrl, sitemapRoutes } from '../lib/seo';
 
 export const prerender = true;
+// Each <loc> is the canonical URL of the page, in the same form as the
+// page's <link rel="canonical">. scripts/validate-sitemaps.mjs checks this
+// list against the built pages.
 export const GET: APIRoute = () => {
   const key = currentSite(import.meta.env.PUBLIC_SITE_KEY);
-  const routes = key === 'agentsdlc' ? ['', '/standards', '/interoperability', '/governance', '/implementations', '/contribute'] : key === 'orbit' ? ['', '/concepts', '/quick-start', '/specification', '/schemas', '/schemas/plan', '/schemas/project-snapshot', '/schemas/reconciliation', '/schemas/execution-slice', '/adopter-guide', '/reconciliation', '/execution-slices', '/examples', '/examples/plan/customer-sso', '/examples/project-snapshot/customer-platform', '/examples/reconciliation/partial-verification', '/examples/execution-slice/customer-sso', '/conformance', '/changelog'] : ['', '/quick-start', '/specification', '/schema', '/examples', '/integrations', '/conformance', '/related-standards', '/changelog'];
-  const base = sites[key].canonicalUrl;
-  const body = routes.map(path => `<url><loc>${base}${path}</loc></url>`).join('');
+  const body = sitemapRoutes[key].map(path => `<url><loc>${canonicalUrl(key, path)}</loc></url>`).join('');
   return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${body}</urlset>`, { headers: { 'Content-Type': 'application/xml; charset=utf-8' } });
 };
