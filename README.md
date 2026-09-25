@@ -17,15 +17,30 @@ Canonical domains are configured through the standards registry. Provisional Ape
 
 ## Deployment
 
-The deployment workflow builds all three sites once and publishes same-repository
-pull requests to protected staging. PR builds are created without deployment credentials. A merge to `main` builds and publishes
-production automatically. A manual production dispatch remains available for
-retries or a selected ref. AWS access uses GitHub OIDC.
+Two workflows build the sites. "Site checks" (`ci.yml`) builds and checks
+every pull request, including a fork pull request, under the `pull_request`
+event. This event gives the job a read-only token, no repository secrets,
+and a build cache scoped to that one pull request. It uploads the built
+site as an artifact.
 
-Configure these repository variables before enabling deployment:
+"Deploy standards sites to staging" (`deploy.yml`) runs after "Site checks"
+completes. It downloads that artifact and publishes it to protected
+staging, but only when the pull request's head repository is this same
+repository. It does not check out or run the pull request's code itself,
+so a fork pull request never reaches the staging AWS role. A merge to
+`main` builds and publishes production automatically
+("Promote standards sites to production", `promote-production.yml`). A
+manual production dispatch remains available for retries or a selected
+ref. AWS access uses GitHub OIDC in every case.
+
+Configure these repository secrets before enabling deployment:
 
 - `STAGING_ROLE_ARN`, `STAGING_BUCKET`, `STAGING_DISTRIBUTION`
 - `PRODUCTION_ROLE_ARN`, `PRODUCTION_BUCKET`, `PRODUCTION_DISTRIBUTION`
+
+Use repository secrets, not repository variables, for these values.
+GitHub does not mask a variable's value in workflow logs. GitHub masks a
+secret's value.
 
 The three site builds share one CloudFront distribution and S3 origin. Each
 site is uploaded under its own prefix (`agentsdlc/`, `orbit/`, `agdr/`) and the
