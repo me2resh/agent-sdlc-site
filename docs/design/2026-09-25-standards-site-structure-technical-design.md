@@ -403,7 +403,7 @@ Map rules, checked in CI by a new `scripts/validate-redirects.mjs` (added in PR 
 - A key is not also a real page in the same build.
 - An internal target is a real file in the same build.
 - An external target uses one of the three canonical hosts. No other host is allowed.
-- An external target is a built file on the target site. The one exception is a target that a later PR adds. `config/redirects.ts` lists each such target in `pendingTargets`, with the PR that adds it. The check fails when a listed target is built, so that the list stays current.
+- An external target is a built file on the target site. The one exception is a target that a later PR adds. `config/redirects.ts` lists each such target in `pendingTargets`, with the PR that adds it. The check fails when a listed target is built, so that the list stays current. The check also fails when no redirect entry uses a `pendingTargets` URL.
 - Each 301 has `Cache-Control: max-age=3600`. Each 302 has `Cache-Control: no-store`.
 - No chain and no loop. A target is never a key, on the same site or on the site of an external target. The check counts the edge slash 301 as a hop: a target that ends with a slash (other than `/`) is a chain of two hops, and the check fails.
 - Each URL in the URL inventory is a real page or a redirect key.
@@ -539,7 +539,7 @@ Each PR is one ticket. Each PR keeps every current URL working, except the soft-
 | 7 | #18 | ORBIT versioned spec and schemas | Vendor `orbit-spec` in the manifest. Build `/spec/draft` (and `/spec/0.1.0` after U3), `/schema/<record>/v0.1.json`, and examples from the vendored files. Replace `specification.astro`. Redirects for `/specification` and old JSON URLs. | PR 4, PR 5, U2, Q4, Q8 | ~350 lines |
 | 8 | #18 | ORBIT duplicate removal and remaining sections | Move `/schemas/<record>` to `/schema/<record>`. Merge `/reconciliation` and `/execution-slices` into `/concepts`. Move the adopter guide. Add `/governance` and `/implementations`. Nav in 9-section order. All ORBIT redirects in 4.2. | PR 7, #16, #26 | ~400 lines |
 
-Order: 1 → 2a → 3 → 4 → 5 → 6 → 7 → 8. PR 2b can merge at any time after 2a, when D1 and I1 are done.
+Order: 1 → 2a → 3 → 4 → 5 → 6 → 7 → 8. PR 2b needs PR 2a, D1, and I1. PR 2b also needs PR 4, PR 5, and PR 7, because they add the `pendingTargets` URLs. PR 2b can go before them only with a recorded 404 exception for those redirects (see the PR 2b row).
 
 Soft-404 URLs in PR 1: PR 1 removes the cross-site files and adds their redirect entries in the same PR, so the map and the inventory are complete from the first deploy. The entries take effect at the edge only after PR 2b. Until then, these URLs return 403, or 404 after I1 and #32. This is acceptable, because these files only contained the text "Not found". Real cross-site HTML pages (for example `/standards` on ORBIT) also get an HTML stub in PR 2a. So deploy PR 1 and PR 2a in the same release window, with no other deploy between them.
 
@@ -674,6 +674,7 @@ The repository keeps decision notes in `docs/design/`. These decisions are mater
 - [ ] The build writes an HTML stub at each old HTML path, with canonical link and `noindex`. (PR 1 already writes `dist/<site>/_redirects.json`.)
 - [ ] `validate-redirects.mjs` (from PR 1) also fails when an old HTML path in the map has no stub, or a stub names a different target.
 - [ ] The PR #30 sitemap check skips pages with `noindex` and a meta refresh, and still fails for any other page that is not in the sitemap.
+- [ ] A build check fails when a site build contains a file extension that is not in the edge function's list (4.3, step 5). This repository keeps the list in one place (N4).
 - [ ] PR 1 and PR 2a deploy in the same release window.
 
 ### PR 2b: Edge redirects
