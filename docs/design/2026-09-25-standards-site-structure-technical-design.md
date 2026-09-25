@@ -110,7 +110,7 @@ Mermaid validation: this diagram was rendered to SVG with `npx -y @mermaid-js/me
 |-----------|-------|---------|
 | Spec-sources manifest | `scripts/spec-sources.mjs` (replaces `scripts/agdr-spec-source.mjs`) | Records each spec version: version, tag, commit, status, date, and SHA-256 of each file. |
 | Vendored files | `apps/site/src/data/<spec>/versions/<version>/` and `.../versions/draft/` | Byte-identical copies of the files at the recorded commit. |
-| Route registry | `apps/site/src/lib/routes.ts` | The list of pages for each site, with the section of each page. The nav, the footer, and the build read it. `seo.ts` (PR #30) reads it for the sitemap route list. There is one route list only. |
+| Route registry | `apps/site/src/lib/routes.ts` | The list of pages for each site, with the section of each page. The build and `seo.ts` (PR #30) read it from PR 1. `seo.ts` reads it for the sitemap route list. The nav and the footer read it from the #16 PR (section 7.3). There is one route list only. |
 | Redirect map | `config/redirects.ts` | Old path, new path, status code, and cache policy for each site. Generated entries (for example `/spec/latest`) come from the manifest. |
 | Status block | `apps/site/src/components/SpecStatus.astro` | Renders the "status of this document" block from the manifest. |
 | Spec renderer | Astro content collection with the built-in `glob()` loader over `versions/*/SPEC.md` | Renders Markdown to HTML with heading IDs. Uses no new dependency. |
@@ -376,7 +376,7 @@ agentsdlc.ai (added in PR 1, #31). Before PR 1, the agentsdlc.ai build served OR
 | `/adopter-guide` | `https://orbitspec.dev/adopter-guide` | 301 |
 | `/changelog.md` (soft-404 file today) | `https://agdr.dev/changelog.md` | 301 |
 | `/schema/agdr.schema.json`, `/schema/agdr-json.schema.json`, `/agdr-spec.md` (soft-404 files today) | Same targets as the ORBIT rows above | 301 |
-| `/schema/orbit-plan.json`, `/schema/plan.schema.json`, and the other ORBIT schema paths (soft-404 files today) | The matching `https://orbitspec.dev/schema/<record>/v0.1.json` | 301 |
+| The eight ORBIT schema paths in the ORBIT rows above: `/schema/orbit-plan.json`, `/schema/plan.schema.json`, `/schema/project-snapshot.json`, `/schema/project-snapshot.schema.json`, `/schema/reconciliation.json`, `/schema/reconciliation.schema.json`, `/schema/execution-slice.json`, `/schema/execution-slice.schema.json` (soft-404 files today) | The matching `https://orbitspec.dev/schema/<record>/v0.1.json` | 301 |
 
 The four ORBIT page targets are the current ORBIT URLs, because the real pages are there now. When PR 7 redirects `/specification` and PR 8 moves `/adopter-guide`, those PRs also change the matching agentsdlc.ai target to the new ORBIT URL, so that no chain forms. The redirect validator fails on such a chain (see the map rules below).
 
@@ -403,6 +403,8 @@ Map rules, checked in CI by a new `scripts/validate-redirects.mjs` (added in PR 
 - A key is not also a real page in the same build.
 - An internal target is a real file in the same build.
 - An external target uses one of the three canonical hosts. No other host is allowed.
+- An external target is a built file on the target site. The one exception is a target that a later PR adds. `config/redirects.ts` lists each such target in `pendingTargets`, with the PR that adds it. The check fails when a listed target is built, so that the list stays current.
+- Each 301 has `Cache-Control: max-age=3600`. Each 302 has `Cache-Control: no-store`.
 - No chain and no loop. A target is never a key, on the same site or on the site of an external target. The check counts the edge slash 301 as a hop: a target that ends with a slash (other than `/`) is a chain of two hops, and the check fails.
 - Each URL in the URL inventory is a real page or a redirect key.
 
@@ -433,6 +435,13 @@ Function rules (non-functional requirements):
 - The code stays small. The map is data in the KeyValueStore, not code.
 
 **File layer (fallback).** The build writes an HTML stub at each old HTML path (for example `schemas/plan/index.html`). The stub has `<meta http-equiv="refresh" content="0; url=<new>">`, `<link rel="canonical" href="<new>">`, `<meta name="robots" content="noindex">`, and a visible link. The stub works before the edge layer exists, on staging, and when the lookup fails open. The PR #30 sitemap check fails when a built page is not in the sitemap, so PR 2a changes that check to skip pages that have both `noindex` and a meta refresh. JSON paths cannot use a meta refresh. So, until the edge layer is live, the build keeps a byte-identical copy of each schema at its old JSON path. PR 2b removes these copies after the edge layer is verified.
+
+**Public map file.** From PR 1, each site build contains `/_redirects.json`. The file holds only public redirect data. A client can see the same data when it follows the redirects. PR 2b decides one of two options:
+
+- The edge serves the file as a normal static file.
+- The S3 sync does not upload the file.
+
+The URL inventory never removes a URL. So if PR 2b stops the upload, PR 2b must add a redirect for `/_redirects.json` or record an accepted 404.
 
 **Deploy.** The build writes `dist/<site>/_redirects.json`. A workflow step writes it into the KeyValueStore after the S3 sync and before the invalidation, with the store ETag. Staging and production use separate stores.
 
@@ -520,9 +529,9 @@ Each PR is one ticket. Each PR keeps every current URL working, except the soft-
 
 | PR | Ticket | Title | Changes | Depends on | Size |
 |----|--------|-------|---------|------------|------|
-| 1 | #31 | Route registry | Add `routes.ts`. Nav, footer, and `seo.ts` read it (one sitemap route list). Build each page only for its owning site. Remove `canonicalOwner` entries for pages that are no longer built. Add `validate-routes.mjs`. Generate the URL inventory. Add `config/redirects.ts` with the entries for the removed cross-site and soft-404 URLs, write `_redirects.json`, and add `validate-redirects.mjs` (moved from PR 2a, so that the map and the inventory are checked from the first deploy). | PR #30 merged | ~300 lines |
+| 1 | #31 | Route registry | Add `routes.ts`. `seo.ts` reads it (one sitemap route list). The nav and the footer read it from the #16 PR (section 7.3). Build each page only for its owning site. Remove `canonicalOwner` entries for pages that are no longer built. Add `validate-routes.mjs`. Generate the URL inventory. Add `config/redirects.ts` with the entries for the removed cross-site and soft-404 URLs, write `_redirects.json`, and add `validate-redirects.mjs` (moved from PR 2a, so that the map and the inventory are checked from the first deploy). | PR #30 merged | ~300 lines |
 | 2a | #18 | HTML stubs | Add the HTML stubs, and extend `validate-redirects.mjs` to check them. Change the PR #30 sitemap check to skip `noindex` stubs. | PR 1 | ~150 lines |
-| 2b | #18 | Edge redirects | Write `_redirects.json` into the KeyValueStore in the staging `workflow_run` deploy and in the production deploy on `main`. Staging smoke test with curl. Remove the JSON legacy copies. | PR 2a, D1, I1, PR #33 | ~120 lines |
+| 2b | #18 | Edge redirects | Write `_redirects.json` into the KeyValueStore in the staging `workflow_run` deploy and in the production deploy on `main`. Staging smoke test with curl. Remove the JSON legacy copies. Decide the public `/_redirects.json` file (section 4.3). | PR 2a, D1, I1, PR #33. PR 4, PR 5, and PR 7, because they add redirect targets from the `pendingTargets` list. PR 2b can go first only if it records that these redirects return 404 until the target PR merges. | ~120 lines |
 | 3 | #18 | Multi-version spec sources | Replace `agdr-spec-source.mjs` with `spec-sources.mjs`. Move AgDR files to `versions/draft/`. Add `versions/1.2.0/` from `e4e1a4e` (or tag `v1.2.0`). Extend the hash check, the sync script, and the drift workflow. Add the tag check on `pull_request`. Keep #22's version check working. No page change. | PR 1, PR #33 | ~300 lines |
 | 4 | #18 | AgDR versioned spec pages | Content collection, remark link rewrite, `SpecStatus.astro`, normative labels, BCP 14 marking, spec lint. Pages `/spec`, `/spec/1.2.0`, `/spec/draft`, raw `.md`. Section 9 as 2.4 states. Redirects for `/agdr-spec.md` and `/spec/latest`. The `/specification` redirect only after Q2. | PR 2a, PR 3, Q2 for the redirect | ~400 lines |
 | 5 | #18 | AgDR schema URLs | `/schema`, `/schema/agdr`, `/schema/agdr-json`, `/schema/agdr/v1.2.json`, `/schema/agdr-json/draft.json`. `$id` check with the 1.2.0 exception. Redirects for old schema URLs. | PR 3, Q5 | ~250 lines |
@@ -542,10 +551,10 @@ Soft-404 URLs in PR 1: PR 1 removes the cross-site files and adds their redirect
 | #31 (cross-site pages) | #31 asks to build each page only for its owning site, to remove the `canonicalOwner` workaround for pages that are no longer built, and to add a registry check. | **#31 is the ticket for PR 1.** PR 1 is titled for #31 and closes it. PR 1 removes the `canonicalOwner` entries for all pages that it stops building. The one remaining entry is `/interoperability` on ORBIT and AgDR (the PR #28 short page). That entry is removed when the short page becomes a 301 after PR 2b (Q12). Then `canonicalOwner` is deleted. |
 | #32 (404 and slash 301) | #32 changes the same viewer-request function as I1. | I1 and #32 are **one** coordinated infrastructure change, in the step order in 4.3. After it, a removed file returns 404. |
 | #27, PR #33 (CI hardening) | PR #33 moves the staging deploy to `workflow_run`, moves AWS values to secrets, and pins actions. | PR 2b adds the KeyValueStore write only to the staging `workflow_run` deploy and to the production deploy on `main`, with the store ARN in a secret and a role scoped to one store. The tag check (PR 3) runs on `pull_request` with `contents: read`, never on `pull_request_target`. New actions are pinned to a full commit SHA. |
-| #16 (headings, skip link) | PR 8 moves `OrbitResourcePage` to a new URL. | PR 8 keeps the #16 changes. It moves the page and does not rewrite it. |
+| #16 (headings, skip link, nav links) | PR 8 moves `OrbitResourcePage` to a new URL. #16 changes the nav and the footer after #26. | PR 8 keeps the #16 changes. It moves the page and does not rewrite it. **The #16 PR owns "the nav and the footer read the route registry".** It makes the nav and the footer in `StandardLayout.astro` read `routes.ts`, with no second link list. |
 | #22 (AgDR version module) | PR 3 and PR 4 read the version from the manifest. | PR 3 keeps `agdr-changelog.ts` as the reader of the vendored CHANGELOG. The manifest adds data. The #22 checks stay in `npm run validate`. |
 | #25, PR #28 (interoperability) | PR #28 keeps the full profile on agentsdlc.ai and shows a short page on ORBIT and AgDR. | The route registry lists the short page for ORBIT and AgDR. A change to a 301 waits for PR 2b and Q12. |
-| #26 (ORBIT menu) | PR 6 and PR 8 change the menu entries. #26 changes the menu component in `StandardLayout.astro` in parallel with PR 1. | They change only the entry list in the route registry, not the component. PR 1 adds the registry but does not edit `StandardLayout.astro`, so that it does not conflict with #26. The #26 PR (or the first PR after it) makes the menu and the footer read the registry. PR 1 removes no page that the menu or the footer links to, and the PR 1 link check proves it. |
+| #26 (ORBIT menu) | PR 6 and PR 8 change the menu entries. #26 changes the menu component in `StandardLayout.astro` in parallel with PR 1. | They change only the entry list in the route registry, not the component. PR 1 adds the registry but does not edit `StandardLayout.astro`, so that it does not conflict with #26. The #26 PR (PR #35) does not make the menu read the registry. The #16 PR does this work (see the #16 row). PR 1 removes no page that the menu or the footer links to. The PR 1 link check proves it. |
 
 ---
 
@@ -650,16 +659,17 @@ The repository keeps decision notes in `docs/design/`. These decisions are mater
 ### PR 1: Route registry (ticket #31)
 
 - [ ] `apps/site/src/lib/routes.ts` lists each page of each site with its section.
-- [ ] The nav, the footer, and `seo.ts` read the registry. `seo.ts` has no second route list.
+- [ ] `seo.ts` reads the registry. `seo.ts` has no second route list. (The nav and the footer read the registry from the #16 PR. See section 7.3.)
+- [ ] Each internal link in a built page goes to a built file or a redirect key of the same site. `validate-routes.mjs` checks this. So the nav and the footer link only to built pages or redirect keys.
 - [ ] Each site build contains only the pages that the registry assigns to that site. The ORBIT build emits no AgDR file, and the AgDR build emits no ORBIT file.
 - [ ] `canonicalOwner` has no entry for a page that is no longer built.
 - [ ] `config/url-inventory/<site>.txt` lists every URL, HTML and non-HTML, from the build of the base commit and the live sitemaps.
 - [ ] `config/redirects.ts` has an entry for each removed cross-site or soft-404 URL, on all three sites (section 4.2). No key or target has a trailing slash.
 - [ ] `validate-routes.mjs` runs in `npm run validate` and fails when a built file is not in the registry.
-- [ ] `validate-redirects.mjs` runs in `npm run validate` and fails on a trailing slash in a key or target, a missing internal target, a chain (the slash 301 counts as a hop), a loop, a foreign host, a key that is also a page, or an inventory URL with no page and no redirect.
+- [ ] `validate-redirects.mjs` runs in `npm run validate` and fails on a trailing slash in a key or target, a missing internal target, a chain (the slash 301 counts as a hop), a loop, a foreign host, a key that is also a page, or an inventory URL with no page and no redirect. It also fails on an external target that is not built on its site and is not in `pendingTargets`, and on a cache policy other than the map rule.
 - [ ] The PR #30 checks still pass. All pages in the registry render as before.
 
-### PR 2a: Redirect validator and HTML stubs
+### PR 2a: HTML stubs
 
 - [ ] The build writes an HTML stub at each old HTML path, with canonical link and `noindex`. (PR 1 already writes `dist/<site>/_redirects.json`.)
 - [ ] `validate-redirects.mjs` (from PR 1) also fails when an old HTML path in the map has no stub, or a stub names a different target.
@@ -670,7 +680,7 @@ The repository keeps decision notes in `docs/design/`. These decisions are mater
 
 - [ ] D1 is recorded, and I1 (with #32) is live on staging and production.
 - [ ] The staging `workflow_run` deploy and the production deploy on `main` write the map into their own KeyValueStore. The store ARN comes from a secret. New actions are pinned to a full commit SHA.
-- [ ] On staging, each map entry returns the expected code, `Location`, and `Cache-Control` (`max-age=3600` for a new 301, `no-store` for `/spec/latest`).
+- [ ] On staging, each map entry returns the expected code, `Location`, and `Cache-Control` (`max-age=3600` for a new 301, `no-store` for each 302).
 - [ ] On staging, a slash-form old URL returns one redirect to the final target.
 - [ ] Old JSON schema URLs return 301 to the `$id` URL. The JSON copies are removed.
 
