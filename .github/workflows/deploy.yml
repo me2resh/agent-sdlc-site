@@ -108,6 +108,49 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Staging is one shared environment for every open pull
+            // request. The last deploy wins, so each staging comment
+            // must say which commit it shows and when, and the
+            // comment on the pull request staging previously served
+            // must say it moved on. Ownership is tracked with a
+            // hidden HTML marker at the end of each bot comment:
+            //   <!-- staging-owner: current pr=<N> -->
+            //   <!-- staging-owner: superseded pr=<N> -->
+            // Only one open pull request's comment carries the
+            // "current" marker at a time, because this step rewrites
+            // the previous owner's comment to "superseded" in the
+            // same run that makes a new pull request current.
+            const STAGING_MARKER_HEADING = '### Staging deployment';
+            const CURRENT_MARKER_RE = /<!-- staging-owner: current pr=(\d+) -->/;
+
+            function buildCurrentBody({ prNumber, shortSha, commitUrl, deployedAtUtc }) {
+              return [
+                STAGING_MARKER_HEADING,
+                '',
+                `Staging now shows [${shortSha}](${commitUrl}), deployed ${deployedAtUtc} UTC, from this pull request:`,
+                '',
+                '- [Agent SDLC](https://standards.staging.apexyard.ai/)',
+                '- [ORBIT](https://orbit.staging.standards.apexyard.ai/)',
+                '- [AgDR](https://agdr.staging.standards.apexyard.ai/)',
+                '',
+                'Staging requires the configured basic-auth password.',
+                '',
+                'Staging is shared by every open pull request. The latest deploy wins, so this comment stops being current the moment another pull request deploys.',
+                '',
+                `<!-- staging-owner: current pr=${prNumber} -->`
+              ].join('\n');
+            }
+
+            function buildSupersededBody({ prNumber, newPrNumber, newPrUrl }) {
+              return [
+                STAGING_MARKER_HEADING,
+                '',
+                `Staging now shows [pull request #${newPrNumber}](${newPrUrl}). Staging is shared, and this pull request's build is no longer on it.`,
+                '',
+                `<!-- staging-owner: superseded pr=${prNumber} -->`
+              ].join('\n');
+            }
+
             const pr = context.payload.workflow_run.pull_requests[0];
             const runHeadSha = context.payload.workflow_run.head_sha;
             if (!pr || pr.head.sha !== runHeadSha) {
@@ -115,26 +158,63 @@ jobs:
               return;
             }
             const prNumber = pr.number;
-            const body = [
-              '### Staging deployment',
-              '',
-              'The standards sites were built from this pull request and published to protected staging:',
-              '',
-              '- [Agent SDLC](https://standards.staging.apexyard.ai/)',
-              '- [ORBIT](https://orbit.staging.standards.apexyard.ai/)',
-              '- [AgDR](https://agdr.staging.standards.apexyard.ai/)',
-              '',
-              'Staging requires the configured basic-auth password.'
-            ].join('\n');
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              per_page: 100
-            });
-            const existing = comments.find(comment => comment.user?.type === 'Bot' && comment.body?.includes('### Staging deployment'));
+            const shortSha = runHeadSha.slice(0, 7);
+            const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${runHeadSha}`;
+            const deployedAtUtc = new Date().toISOString().replace('.000Z', 'Z').replace('T', ' ');
+
+            async function findBotStagingComment(issueNumber) {
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                per_page: 100
+              });
+              return comments.find(comment => comment.user?.type === 'Bot' && comment.body?.includes(STAGING_MARKER_HEADING));
+            }
+
+            // Find the pull request that currently owns staging, if
+            // any. Only open pull requests are searched: a previous
+            // owner that has since been closed or merged needs no
+            // update, so it is skipped cleanly by construction.
+            async function findPreviousOwner() {
+              const openPulls = await github.paginate(github.rest.pulls.list, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100
+              });
+              for (const openPr of openPulls) {
+                if (openPr.number === prNumber) continue;
+                const comment = await findBotStagingComment(openPr.number);
+                const match = comment?.body?.match(CURRENT_MARKER_RE);
+                if (match && Number(match[1]) === openPr.number) {
+                  return { prNumber: openPr.number, commentId: comment.id };
+                }
+              }
+              return null;
+            }
+
+            const currentBody = buildCurrentBody({ prNumber, shortSha, commitUrl, deployedAtUtc });
+            const existing = await findBotStagingComment(prNumber);
             if (existing) {
-              await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body });
+              await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: existing.id, body: currentBody });
             } else {
-              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: prNumber, body });
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: prNumber, body: currentBody });
+            }
+
+            // Updating the previous owner's comment is best-effort.
+            // A failure here must never fail this job: the new
+            // staging comment above already published the current
+            // state.
+            try {
+              const previousOwner = await findPreviousOwner();
+              if (previousOwner) {
+                const newPrUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${prNumber}`;
+                const supersededBody = buildSupersededBody({ prNumber: previousOwner.prNumber, newPrNumber: prNumber, newPrUrl });
+                await github.rest.issues.updateComment({ owner: context.repo.owner, repo: context.repo.repo, comment_id: previousOwner.commentId, body: supersededBody });
+              } else {
+                core.info('No previous staging owner found; nothing to update.');
+              }
+            } catch (error) {
+              core.warning(`Could not update the previous staging owner's comment: ${error.message}`);
             }
