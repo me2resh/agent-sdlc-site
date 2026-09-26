@@ -19,15 +19,21 @@
 //   - a code is not 301 or 302,
 //   - a URL in config/url-inventory/<site>.txt is not a built file and not
 //     a key,
-//   - dist/<site>/_redirects.json differs from the map.
+//   - dist/<site>/_redirects.json differs from the map,
+//   - an HTML key (a key that is not a file path for the edge) has no stub
+//     page in the build, or its stub is not noindex, or the meta refresh,
+//     the canonical link, or the visible link of the stub is not the
+//     absolute target of the entry,
+//   - a build contains a stub (a page with a meta refresh) at a path that
+//     is not an HTML key of that site.
 //
 // Node strips the TypeScript types of the imported config modules.
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { builtUrls } from './generate-url-inventory.mjs';
-import { cacheControl, pendingTargets, redirects, redirectsDocument } from '../config/redirects.ts';
+import { builtUrls, urlForFile } from './generate-url-inventory.mjs';
+import { cacheControl, htmlRedirects, pendingTargets, redirects, redirectsDocument } from '../config/redirects.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const dist = join(root, 'apps/site/dist');
@@ -65,6 +71,10 @@ for (const site of SITES) {
   }
 }
 
+/** @type {Record<string, Set<string>>} */
+const htmlKeys = {};
+for (const site of SITES) htmlKeys[site] = new Set(htmlRedirects(site).map(entry => entry.from));
+
 let entryCount = 0;
 /** @type {Set<string>} */
 const usedPending = new Set();
@@ -73,7 +83,8 @@ for (const site of SITES) {
     entryCount++;
     const where = `${site}${from}`;
     if (!from.startsWith('/') || !oneForm(from)) problems.push(`${where}: key is not a path in the one URL form`);
-    if (built[site].has(from)) problems.push(`${where}: key is also a file in the ${site} build`);
+    // An HTML key has its stub at the key path. The stub checks below cover it.
+    if (built[site].has(from) && !htmlKeys[site].has(from)) problems.push(`${where}: key is also a file in the ${site} build`);
     if (code !== 301 && code !== 302) problems.push(`${where}: code ${code} is not 301 or 302`);
 
     let targetSite = site;
@@ -138,9 +149,51 @@ for (const site of SITES) {
   else if (readFileSync(file, 'utf8') !== expected) problems.push(`${site}: _redirects.json differs from config/redirects.ts. Build again.`);
 }
 
+// Each HTML key has one stub that names the absolute target of its entry,
+// and each stub in a build belongs to an HTML key (design #18 section 4.3).
+/** @param {string} value */
+const unescapeHtml = value => value.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+/** @param {string} html @param {RegExp} re */
+const matches = (html, re) => [...html.matchAll(re)].map(m => unescapeHtml(m[1]));
+/** @param {string} dir @returns {string[]} */
+function pageFiles(dir) {
+  return readdirSync(dir).flatMap(entry => {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) return entry === '_astro' ? [] : pageFiles(full);
+    return entry.endsWith('.html') ? [full] : [];
+  });
+}
+let stubCount = 0;
+for (const site of SITES) {
+  const siteDir = join(dist, site);
+  for (const { from, to } of htmlRedirects(site)) {
+    const where = `${site}${from}`;
+    const file = join(siteDir, from.slice(1), 'index.html');
+    if (!existsSync(file)) {
+      problems.push(`${where}: HTML key has no stub page at ${relative(root, file)}`);
+      continue;
+    }
+    const html = readFileSync(file, 'utf8');
+    const target = new URL(to, origins[site]).href;
+    const refresh = matches(html, /<meta http-equiv="refresh" content="0; url=([^"]*)">/g);
+    const canonical = matches(html, /<link rel="canonical" href="([^"]*)">/g);
+    const links = matches(html, /<a href="([^"]*)">/g);
+    if (refresh.length !== 1 || refresh[0] !== target) problems.push(`${where}: stub meta refresh is ${refresh.join(', ') || '(none)'}, expected ${target}`);
+    if (canonical.length !== 1 || canonical[0] !== target) problems.push(`${where}: stub canonical link is ${canonical.join(', ') || '(none)'}, expected ${target}`);
+    if (links.length !== 1 || links[0] !== target) problems.push(`${where}: stub visible link is ${links.join(', ') || '(none)'}, expected ${target}`);
+    if (!/<meta name="robots" content="noindex">/.test(html)) problems.push(`${where}: stub has no <meta name="robots" content="noindex">`);
+  }
+  for (const file of pageFiles(siteDir)) {
+    if (!/<meta http-equiv="refresh"/i.test(readFileSync(file, 'utf8'))) continue;
+    stubCount++;
+    const url = urlForFile(relative(siteDir, file));
+    if (!htmlKeys[site].has(url)) problems.push(`${site}${url}: the build contains a stub, but the map has no HTML key for this path`);
+  }
+}
+
 if (problems.length > 0) {
   console.error('Redirect map validation failed:');
   for (const problem of problems) console.error(`  ${problem}`);
   throw new Error(`redirect validation failed: ${problems.length} problem(s)`);
 }
-console.log(`redirect validation passed: ${entryCount} redirect entries on 3 sites have no trailing slash, no chain, and allowed hosts; all ${inventoryCount} inventory URLs are built files or redirect keys`);
+console.log(`redirect validation passed: ${entryCount} redirect entries on 3 sites have no trailing slash, no chain, and allowed hosts; all ${inventoryCount} inventory URLs are built files or redirect keys; ${stubCount} HTML stubs match their HTML keys and targets`);
