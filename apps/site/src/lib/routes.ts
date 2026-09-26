@@ -8,6 +8,10 @@
 //   - seo.ts reads this list for sitemap.xml and for the canonical owner of
 //     a page. There is no second route list.
 //   - Paths use the one URL form: no trailing slash, except the root "/".
+//   - The primary nav and the footer of each site read this list through
+//     menuLinks() (agent-sdlc-site#16, design #18 section 7.3). A menu entry
+//     is a `menus` value on the route it links to. There is no second link
+//     list.
 //
 // How a route gets built:
 //   - `source` names the file that renders the route (see Route.source).
@@ -55,10 +59,37 @@ export interface Route {
   readonly canonicalOwner?: SiteKey;
   /** false: the page is not in sitemap.xml. Default true for a page. */
   readonly sitemap?: boolean;
+  /** The menu entries that link to this route. */
+  readonly menus?: readonly MenuEntry[];
+}
+
+/** One link to a route in the primary nav or the footer of a site. */
+export interface MenuEntry {
+  readonly menu: 'nav' | 'footer';
+  readonly label: string;
+  /** The position in the menu. The lowest number comes first. */
+  readonly order: number;
+  /** The site that shows the link. Default: the site that builds the route. */
+  readonly site?: SiteKey;
+}
+
+/** A menu link that a layout renders. */
+export interface MenuLink {
+  readonly label: string;
+  readonly order: number;
+  readonly path: string;
+  /** The site that builds the linked route. */
+  readonly owner: SiteKey;
 }
 
 const page = (path: string, section: Section, source: string, extra: Partial<Route> = {}): Route => ({ path, kind: 'page', section, source, ...extra });
 const file = (path: string, source: string, section: Section = 'site'): Route => ({ path, kind: 'file', section, source });
+const nav = (label: string, order: number, site?: SiteKey): MenuEntry => ({ menu: 'nav', label, order, ...(site ? { site } : {}) });
+const footer = (label: string, order: number, site?: SiteKey): MenuEntry => ({ menu: 'footer', label, order, ...(site ? { site } : {}) });
+const menus = (...entries: MenuEntry[]): Partial<Route> => ({ menus: entries });
+
+// Footer position 2 is the site's Source link. It goes to a GitHub
+// repository, not to a route, so StandardLayout.astro adds it.
 
 /** Files that every site builds. */
 const siteFiles: readonly Route[] = [
@@ -91,29 +122,29 @@ const orbitSchemaRecords = ['plan', 'project-snapshot', 'reconciliation', 'execu
 /** Pages and files of each site. The sitemap uses this order. */
 export const routes: Record<SiteKey, readonly Route[]> = {
   agentsdlc: [
-    page('/', 'overview', 'pages/index.astro'),
-    page('/standards', 'overview', 'routes/standards.astro'),
-    page('/interoperability', 'overview', 'pages/interoperability.astro'),
-    page('/governance', 'governance', 'pages/[slug].astro'),
-    page('/implementations', 'implementations', 'pages/[slug].astro'),
-    page('/contribute', 'governance', 'pages/[slug].astro'),
+    page('/', 'overview', 'pages/index.astro', menus(footer('About Agent SDLC', 1), footer('About Agent SDLC', 1, 'orbit'), footer('About Agent SDLC', 1, 'agdr'))),
+    page('/standards', 'overview', 'routes/standards.astro', menus(footer('Standards', 3))),
+    page('/interoperability', 'overview', 'pages/interoperability.astro', menus(nav('Interoperability', 3))),
+    page('/governance', 'governance', 'pages/[slug].astro', menus(nav('About', 4))),
+    page('/implementations', 'implementations', 'pages/[slug].astro', menus(footer('Implementations', 4))),
+    page('/contribute', 'governance', 'pages/[slug].astro', menus(footer('Contribute', 5))),
     ...siteFiles
   ],
   orbit: [
-    page('/', 'overview', 'pages/index.astro'),
-    page('/concepts', 'overview', 'routes/concepts.astro'),
+    page('/', 'overview', 'pages/index.astro', menus(nav('ORBIT', 1, 'agentsdlc'))),
+    page('/concepts', 'overview', 'routes/concepts.astro', menus(nav('Concepts', 1))),
     page('/quick-start', 'quick-start', 'routes/quick-start.astro'),
-    page('/specification', 'specification', 'routes/specification.astro'),
-    page('/schemas', 'schema', 'pages/[slug].astro'),
+    page('/specification', 'specification', 'routes/specification.astro', menus(nav('Specification', 2))),
+    page('/schemas', 'schema', 'pages/[slug].astro', menus(nav('Schemas', 3))),
     ...orbitSchemaRecords.map(record => page(`/schemas/${record}`, 'schema', 'pages/schemas/[resource].astro')),
-    page('/adopter-guide', 'quick-start', 'routes/adopter-guide.astro'),
-    page('/reconciliation', 'overview', 'pages/[slug].astro'),
-    page('/execution-slices', 'overview', 'pages/[slug].astro'),
+    page('/adopter-guide', 'quick-start', 'routes/adopter-guide.astro', menus(nav('Adopter guide', 6))),
+    page('/reconciliation', 'overview', 'pages/[slug].astro', menus(nav('Reconciliation', 4))),
+    page('/execution-slices', 'overview', 'pages/[slug].astro', menus(nav('Execution slices', 5))),
     page('/examples', 'examples', 'pages/[slug].astro'),
     ...orbitExamples.flatMap(([record, slugs]) => slugs.map(slug => page(`/examples/${record}/${slug}`, 'examples', 'pages/examples/[resource]/[example].astro'))),
-    page('/conformance', 'conformance', 'pages/[slug].astro'),
-    page('/changelog', 'changelog', 'pages/[slug].astro'),
-    page('/contribute', 'governance', 'pages/[slug].astro'),
+    page('/conformance', 'conformance', 'pages/[slug].astro', menus(nav('Conformance', 7))),
+    page('/changelog', 'changelog', 'pages/[slug].astro', menus(nav('Changelog', 8))),
+    page('/contribute', 'governance', 'pages/[slug].astro', menus(nav('Contribute', 9), footer('Contribute', 5))),
     interoperabilityShort,
     ...orbitExamples.flatMap(([record, slugs]) => slugs.map(slug => file(`/examples/${record}/${slug}.json`, 'pages/examples/[resource]/[example].json.ts', 'examples'))),
     // Legacy schema file names. Design #18 PR 7 moves them to the $id URLs.
@@ -124,15 +155,15 @@ export const routes: Record<SiteKey, readonly Route[]> = {
     ...siteFiles
   ],
   agdr: [
-    page('/', 'overview', 'pages/index.astro'),
+    page('/', 'overview', 'pages/index.astro', menus(nav('AgDR', 2, 'agentsdlc'))),
     page('/concepts', 'overview', 'routes/concepts.astro'),
-    page('/quick-start', 'quick-start', 'routes/quick-start.astro'),
-    page('/specification', 'specification', 'routes/specification.astro'),
-    page('/schema', 'schema', 'pages/[slug].astro'),
-    page('/examples', 'examples', 'pages/[slug].astro'),
-    page('/integrations', 'implementations', 'pages/[slug].astro'),
-    page('/conformance', 'conformance', 'pages/[slug].astro'),
-    page('/related-standards', 'overview', 'pages/[slug].astro'),
+    page('/quick-start', 'quick-start', 'routes/quick-start.astro', menus(nav('Quick Start', 1))),
+    page('/specification', 'specification', 'routes/specification.astro', menus(nav('Specification', 2))),
+    page('/schema', 'schema', 'pages/[slug].astro', menus(nav('Schema', 3))),
+    page('/examples', 'examples', 'pages/[slug].astro', menus(nav('Examples', 4))),
+    page('/integrations', 'implementations', 'pages/[slug].astro', menus(nav('Integrations', 5))),
+    page('/conformance', 'conformance', 'pages/[slug].astro', menus(nav('Conformance', 6))),
+    page('/related-standards', 'overview', 'pages/[slug].astro', menus(nav('Related standards', 7))),
     page('/changelog', 'changelog', 'pages/[slug].astro'),
     interoperabilityShort,
     file('/agdr-spec.md', 'routes/agdr-spec.md.ts', 'specification'),
@@ -156,4 +187,20 @@ export function routesFrom(site: SiteKey, source: string): readonly Route[] {
 /** True when the site builds the path. */
 export function hasRoute(site: SiteKey, path: string): boolean {
   return routes[site].some(route => route.path === path);
+}
+
+/**
+ * The links of one menu of a site, in menu order. A link can go to a route
+ * of another site (for example the ORBIT home page in the agentsdlc.ai nav).
+ */
+export function menuLinks(site: SiteKey, menu: MenuEntry['menu']): readonly MenuLink[] {
+  const links: MenuLink[] = [];
+  for (const owner of Object.keys(routes) as SiteKey[]) {
+    for (const route of routes[owner]) {
+      for (const entry of route.menus ?? []) {
+        if (entry.menu === menu && (entry.site ?? owner) === site) links.push({ label: entry.label, order: entry.order, path: route.path, owner });
+      }
+    }
+  }
+  return links.sort((a, b) => a.order - b.order);
 }
