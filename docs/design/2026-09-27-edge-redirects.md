@@ -1,6 +1,6 @@
 # Edge redirects (D1): KeyValueStore lookup in the viewer-request function
 
-- Status: accepted
+- Status: accepted. Platform review: pending.
 - Date: 2026-09-27
 - Ticket: #18 (with #32)
 - Design: `docs/design/2026-09-25-standards-site-structure-technical-design.md`, section 4.3
@@ -67,7 +67,7 @@ Function rules:
 
 - The store lookup is in `try`/`catch`. On an error, the function continues to step 4 and step 5. This is "fail open". A lookup failure never blocks a real page.
 - A redirect in step 2, 3, or 4 returns from the viewer-request function. It adds no origin request and no S3 read.
-- The function copies no request value into `Location`. This includes the query string and all headers.
+- `Location` is the stored target, or the normalized path on the host from the site table. The function copies no other request value into `Location`. This includes the query string and all headers.
 - The code stays small.
 
 ### Open-redirect guard (N2)
@@ -82,7 +82,7 @@ Function rules:
 - Step 5 treats the last path segment as a file only when it ends with an extension in a fixed list. A file keeps its path.
 - Any other path maps to `<path>/index.html`. The root `/` maps to `/index.html`.
 - The function does not treat "a dot in the last segment" as a file. So `/spec/1.2.0` maps to `spec/1.2.0/index.html`.
-- **`edgeFileExtensions` in `config/redirects.ts` is the source list for the edge function.** This repository keeps no other copy of the list.
+- **`edgeFileExtensions` in `config/redirects.ts` is the source list for the edge function.** This repository keeps no other code copy of the list.
 - Today the list has 14 entries: `.json`, `.md`, `.xml`, `.txt`, `.html`, `.png`, `.ico`, `.svg`, `.jpg`, `.webp`, `.css`, `.js`, `.woff2`, `.webmanifest`.
 - `scripts/validate-routes.mjs` fails when a site build contains a file with an extension that is not in the list (N4).
 - The edge function in the infrastructure repository keeps its own copy of the list. A change to the list starts in `config/redirects.ts`.
@@ -125,7 +125,7 @@ On staging, the redirect steps run after the basic-auth check.
 
 - The deploy role of an environment gets write access to the store of that environment only (Q7).
 - The design lists these actions: `cloudfront-keyvaluestore:DescribeKeyValueStore`, `PutKey`, `DeleteKey`, and `ListKeys`.
-- N5 adds `UpdateKeys` to the write step. I1 sets the final action list.
+- N5 adds `UpdateKeys` to the write step.
 
 ### Public map file
 
@@ -153,7 +153,9 @@ PR 2b also needs PR 4, PR 5, and PR 7, because they add the `pendingTargets` URL
 ## Open points (TBD)
 
 - **Stored internal targets.** N2 asks for an absolute `Location` built from the site table. This note applies it to the slash 301. Whether a stored target that starts with `/` also becomes absolute is TBD in I1.
-- **Order of the production store write.** N5 adds new keys before the S3 sync. The edge plan puts the one write job after all three site deploys. PR 2b must reconcile the two. TBD.
+- **Order of the production store write.** Design section 4.3 put the store write after the S3 sync and before the invalidation. N5 adds new keys before the S3 sync. The edge plan puts the one write job after all three site deploys. PR 2b must reconcile these three statements. TBD.
+- **Deploy-role action list.** The design lists four actions, and N5 adds `UpdateKeys` to the write step. The sources do not say where the final action list is set. TBD.
+- **Response code for `/\`.** N2 says to reject a path that starts with `/\`. N2 gives no status code for the rejection. TBD.
 - **Staging concurrency.** Last-write-wins, or one shared concurrency group. PR 2b decides. TBD.
 - **Longer 301 cache.** The design says "the first weeks". The length of the period and the longer `max-age` value are TBD.
 - **Shared 404 page object.** Each site build contains `/404.html` today, from `apps/site/public/404.html`. The object that the 404 response serves is TBD in I1.
