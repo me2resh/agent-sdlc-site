@@ -16,7 +16,9 @@ const example = `{
 {currentSite(import.meta.env.PUBLIC_SITE_KEY) === 'agdr' ? <Layout title="Quick Start"><section class="page"><p class="eyebrow">{agdrVersionBanner}</p><h1>Create your first AgDR in five minutes.</h1><p class="lede">Copy the template, record one consequential technical decision, and validate it against the published schema.</p><div class="card-grid"><article class="card"><h2>Zero dependency</h2><p>Copy <code>agdr-template.md</code>, fill the frontmatter and decision body, then run the repository validator.</p></article><article class="card"><h2>Agent integrations</h2><p>AgDR has integration guidance for Claude Code, Codex, Cursor, Copilot, Windsurf and generic agent prompts.</p></article></div><a class="button" href="https://github.com/me2resh/agent-decision-record/blob/main/agdr-template.md">Use the template</a></section></Layout> : <Layout title="Quick Start"><section class="page"><p class="eyebrow">ORBIT v0.1 · Draft</p><h1>Start with one outcome.</h1><p class="lede">Install the CLI, write one Plan, then observe, reconcile, and sync a bounded slice.</p><pre class="code">{example}</pre>
 
 <h2>Install</h2>
-<p>The npm package is not published yet. Install the CLI from the main branch. The commands below are newer than the v0.1.0 release:</p>
+<p>The npm package is not published yet. Install the CLI from the v0.1.0 tag:</p>
+<pre class="code">npm install -g github:me2resh/orbit-spec#v0.1.0</pre>
+<p>The <code>status</code> command is newer than v0.1.0. To use it, install from the main branch instead:</p>
 <pre class="code">npm install -g github:me2resh/orbit-spec</pre>
 <p>Or, in Claude Code, add the marketplace and install the plugin:</p>
 <pre class="code">/plugin marketplace add me2resh/apexyard
