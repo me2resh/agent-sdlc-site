@@ -116,7 +116,7 @@ type SchemaNode = { type?: string; const?: unknown; enum?: unknown[]; minimum?: 
 export type FieldRow = { field: string; type: string; required: string; meaning: string; constraints: string };
 
 const semanticMeaning: Record<string, string> = {
-  'specVersion': 'ORBIT specification version.', id: 'Stable resource identifier.', revision: 'Plan revision number.',
+  'specVersion': 'ORBIT specification version.', id: 'Stable resource identifier.', revision: 'Plan revision number.', revisionNote: 'Why this Plan revision exists. Name the changed criteria and the evidence for the change.',
   'project': 'Project identity associated with the record.', 'project.id': 'Stable project identifier.', title: 'Human-readable Plan title.', intent: 'Durable planning intent.',
   'outcomes': 'Desired results within the Plan.', 'outcomes[].id': 'Stable Outcome identifier.', 'outcomes[].title': 'Outcome title.', 'outcomes[].intent': 'Outcome intent.',
   'acceptanceCriteria': 'Stable checks for desired Outcomes.', 'acceptanceCriteria[].id': 'Stable Acceptance Criterion identifier.', 'acceptanceCriteria[].outcomeId': 'Outcome assessed by the criterion.', 'acceptanceCriteria[].statement': 'Canonical criterion wording.',
