@@ -33,9 +33,7 @@
 
   /* Layout. */
   --max-w: 1280px;
-  /* Horizontal page inset. The shared layout uses this for header, main,
-     and footer so phone widths stay inside the viewport (no sideways scroll). */
-  --gutter: clamp(1rem, 4vw, 3rem);
+  --gutter: clamp(1.25rem, 4vw, 3rem);
   --radius-sm: 4px;
   --radius-md: 8px;
 
@@ -139,25 +137,10 @@ html[data-theme='dark'] {
 
 /* html and body always share the same theme colors, at every content
    height, so there is no light strip under a short page in dark mode
-   (agent-sdlc-site#14). overflow-x: clip stops a child from opening a
-   sideways page scroll at phone widths; nav and tables that need to
-   scroll do so inside their own overflow containers. */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+   (agent-sdlc-site#14). */
 html,
 body {
   background: var(--bg);
   color: var(--text);
   min-height: 100%;
-  overflow-x: clip;
-  max-width: 100%;
-}
-
-@media (max-width: 430px) {
-  :root {
-    --gutter: 1rem;
-  }
 }
